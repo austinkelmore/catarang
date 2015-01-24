@@ -1,24 +1,128 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"text/template"
 	"time"
 )
 
-type Agent struct {
-	name string
-}
+type JobStatus int
+
+const (
+	NEVER_RUN JobStatus = iota
+	POLLING
+	RUNNING
+	FAILED
+	RECOVERED
+	SUCCESSFUL
+)
 
 type Job struct {
-	Name    string
-	Enabled bool
-	running bool
-	Git_url string
+	Name       string
+	Enabled    bool
+	running    bool
+	Git_url    string
+	LastRun    time.Time
+	LastStatus JobStatus
+	CurStatus  JobStatus
+}
+
+func (j *Job) needsRunning() bool {
+	// todo: akelmore - make this configurable (and use the go way of doing it)
+	// also check if we need to sync instead of just checking time
+	// just rewrite this
+
+	return j.CurStatus == NEVER_RUN || j.needsUpdate()
+}
+
+func (j *Job) run() {
+	log.Println("Running job:", j.Name)
+	// todo: akelmore - make status a stack, not just two
+	j.LastStatus = j.CurStatus
+	j.CurStatus = RUNNING
+	j.LastRun = time.Now()
+
+	if j.LastStatus == NEVER_RUN {
+		j.firstTimeSetup()
+	} else {
+		j.update()
+	}
+
+	if j.CurStatus != FAILED {
+		switch j.LastStatus {
+		case FAILED:
+			j.CurStatus = RECOVERED
+		default:
+			j.CurStatus = SUCCESSFUL
+		}
+	}
+
+	saveConfig()
+}
+
+func (j *Job) firstTimeSetup() {
+	log.Println("Running first time setup for:", j.Name)
+
+	var b bytes.Buffer
+	writer := bufio.NewWriter(&b)
+	multi := io.MultiWriter(writer, os.Stdout)
+
+	cmd := exec.Command("git", "clone", j.Git_url, "jobs/"+j.Name)
+	cmd.Stdout = multi
+	cmd.Stderr = multi
+	if err := cmd.Run(); err != nil {
+		log.Println("Error doing first time setup for:", j.Name)
+		j.CurStatus = FAILED
+	}
+}
+
+func (j *Job) needsUpdate() bool {
+	if time.Since(j.LastRun) < 30*time.Second {
+		return false
+	}
+	log.Println("Running needsUpdate for:", j.Name)
+
+	// todo: akelmore - pull this multiwriter into Job so it can be output on the web
+	var b bytes.Buffer
+	writer := bufio.NewWriter(&b)
+	multi := io.MultiWriter(writer, os.Stdout)
+
+	cmd := exec.Command("git", "status", "-uno", "jobs/"+j.Name)
+	cmd.Stdout = multi
+	cmd.Stderr = multi
+	if err := cmd.Run(); err != nil {
+		log.Println("Error running git status for: ", j.Name)
+		return false
+	}
+
+	return !bytes.Contains(b.Bytes(), []byte("Your branch is up-to-date"))
+}
+
+func (j *Job) update() {
+	log.Println("Running update for:", j.Name)
+
+	var b bytes.Buffer
+	writer := bufio.NewWriter(&b)
+	multi := io.MultiWriter(writer, os.Stdout)
+
+	cmd := exec.Command("git", "pull", "jobs/"+j.Name)
+	cmd.Stdout = multi
+	cmd.Stderr = multi
+	if err := cmd.Run(); err != nil {
+		log.Println("Error pulling git for:", j.Name)
+		j.CurStatus = FAILED
+	} else if bytes.Contains(b.Bytes(), []byte("Already up-to-date.")) {
+		log.Println("Something went wrong with the git pull, it was already up to date. It shouldn't have been.")
+		j.CurStatus = FAILED
+	}
 }
 
 type CatarangConfig struct {
@@ -43,21 +147,20 @@ func deleteJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func pollJobs() {
-	sleepAmount := time.Second * 30
-
 	for {
-		log.Println("Checking all jobs.")
-		for _, job := range config.Jobs {
-			log.Printf("Checking for job: %v\n", job.Name)
+		for index := range config.Jobs {
+			if config.Jobs[index].needsRunning() {
+				config.Jobs[index].run()
+			}
 		}
-		time.Sleep(sleepAmount)
+		time.Sleep(time.Second * 5)
 	}
 }
 
 func renderWebpage(w http.ResponseWriter, r *http.Request) {
 	root, err := template.ParseFiles("root.html")
 	if err != nil {
-		fmt.Println("Can't parse root.html file.")
+		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -69,30 +172,32 @@ func renderWebpage(w http.ResponseWriter, r *http.Request) {
 func readInConfig() {
 	data, err := ioutil.ReadFile(config_file_name)
 	if err != nil {
+		log.Printf("Couldn't find %v, using default values.\n", config_file_name)
 		return
 	}
 
 	if err = json.Unmarshal(data, &config); err != nil {
-		fmt.Println("Error reading in", config_file_name)
-		fmt.Println(err.Error())
+		log.Println("Error reading in", config_file_name)
+		log.Println(err.Error())
 	}
 }
 
 func saveConfig() {
-	data, err := json.Marshal(&config)
+	data, err := json.MarshalIndent(&config, "", "\t")
 	if err != nil {
-		fmt.Println("Error marshaling save data:", err.Error())
+		log.Println("Error marshaling save data:", err.Error())
 		return
 	}
 
 	err = ioutil.WriteFile(config_file_name, []byte(data), 0644)
 	if err != nil {
-		fmt.Println("Error writing config file", config_file_name)
-		fmt.Println(err.Error())
+		log.Println("Error writing config file", config_file_name)
+		log.Println(err.Error())
 	}
 }
 
 func main() {
+	log.Println("Running Catarang!")
 	readInConfig()
 
 	go pollJobs()
