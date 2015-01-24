@@ -36,10 +36,6 @@ type Job struct {
 }
 
 func (j *Job) needsRunning() bool {
-	// todo: akelmore - make this configurable (and use the go way of doing it)
-	// also check if we need to sync instead of just checking time
-	// just rewrite this
-
 	return j.CurStatus == NEVER_RUN || j.needsUpdate()
 }
 
@@ -75,7 +71,7 @@ func (j *Job) firstTimeSetup() {
 	writer := bufio.NewWriter(&b)
 	multi := io.MultiWriter(writer, os.Stdout)
 
-	cmd := exec.Command("git", "clone", j.Git_url, "jobs/"+j.Name)
+	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "clone", "--depth", "1", j.Git_url)
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -95,11 +91,17 @@ func (j *Job) needsUpdate() bool {
 	writer := bufio.NewWriter(&b)
 	multi := io.MultiWriter(writer, os.Stdout)
 
-	cmd := exec.Command("git", "status", "-uno", "jobs/"+j.Name)
+	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "remote", "update")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
-		log.Println("Error running git status for: ", j.Name)
+		return false
+	}
+
+	cmd = exec.Command("git", "-c", "jobs/"+j.Name, "status", "-uno")
+	cmd.Stdout = multi
+	cmd.Stderr = multi
+	if err := cmd.Run(); err != nil {
 		return false
 	}
 
@@ -113,7 +115,7 @@ func (j *Job) update() {
 	writer := bufio.NewWriter(&b)
 	multi := io.MultiWriter(writer, os.Stdout)
 
-	cmd := exec.Command("git", "pull", "jobs/"+j.Name)
+	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "pull")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
