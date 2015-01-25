@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -68,8 +67,7 @@ func (j *Job) firstTimeSetup() {
 	log.Println("Running first time setup for:", j.Name)
 
 	var b bytes.Buffer
-	writer := bufio.NewWriter(&b)
-	multi := io.MultiWriter(writer, os.Stdout)
+	multi := io.MultiWriter(&b, os.Stdout)
 
 	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "clone", "--depth", "1", j.Git_url)
 	cmd.Stdout = multi
@@ -88,34 +86,37 @@ func (j *Job) needsUpdate() bool {
 
 	// todo: akelmore - pull this multiwriter into Job so it can be output on the web
 	var b bytes.Buffer
-	writer := bufio.NewWriter(&b)
-	multi := io.MultiWriter(writer, os.Stdout)
+	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "remote", "update")
+	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "ls-remote", "origin", "-h", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
 		return false
 	}
 
-	cmd = exec.Command("git", "-c", "jobs/"+j.Name, "status", "-uno")
+	remoteHead := string(bytes.Fields(b.Bytes())[0])
+
+	b.Reset()
+	cmd = exec.Command("git", "-c", "jobs/"+j.Name, "rev-parse", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
 		return false
 	}
 
-	return !bytes.Contains(b.Bytes(), []byte("Your branch is up-to-date"))
+	localHead := string(bytes.Fields(b.Bytes())[0])
+
+	return remoteHead != localHead
 }
 
 func (j *Job) update() {
 	log.Println("Running update for:", j.Name)
 
 	var b bytes.Buffer
-	writer := bufio.NewWriter(&b)
-	multi := io.MultiWriter(writer, os.Stdout)
+	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "pull")
+	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "pull", "--depth", "1")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
