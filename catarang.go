@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+type GitPluginOptions struct {
+	Username string
+	Email    string
+	Path     string
+}
+
+func (g *GitPluginOptions) path(name string) string {
+	return g.Path + name + "/"
+}
+
 type JobStatus int
 
 const (
@@ -33,6 +43,8 @@ type Job struct {
 	LastStatus JobStatus
 	CurStatus  JobStatus
 }
+
+// make git have a username and email for catarang
 
 func (j *Job) needsRunning() bool {
 	return j.CurStatus == NEVER_RUN || j.needsUpdate()
@@ -69,12 +81,34 @@ func (j *Job) firstTimeSetup() {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "clone", "--depth", "1", j.Git_url)
+	cmd := exec.Command("git", "clone", "--depth", "1", j.Git_url, config.Git.path(j.Name))
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
 		log.Println("Error doing first time setup for:", j.Name)
 		j.CurStatus = FAILED
+		return
+	}
+
+	b.Reset()
+	cmd = exec.Command("git", "-C", config.Git.path(j.Name), "config", "user.email", config.Git.Email)
+	cmd.Stdout = multi
+	cmd.Stderr = multi
+	if err := cmd.Run(); err != nil {
+		log.Println("Error trying to set git email for:", j.Name)
+		j.CurStatus = FAILED
+		// todo: akelmore - clean up
+		return
+	}
+
+	b.Reset()
+	cmd = exec.Command("git", "-C", config.Git.path(j.Name), "config", "user.name", config.Git.Username)
+	cmd.Stdout = multi
+	cmd.Stderr = multi
+	if err := cmd.Run(); err != nil {
+		log.Println("Error trying to set git username for:", j.Name)
+		j.CurStatus = FAILED
+		// todo: akelmore - clean up
 	}
 }
 
@@ -88,7 +122,7 @@ func (j *Job) needsUpdate() bool {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "ls-remote", "origin", "-h", "HEAD")
+	cmd := exec.Command("git", "-C", config.Git.path(j.Name), "ls-remote", "origin", "-h", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -98,7 +132,7 @@ func (j *Job) needsUpdate() bool {
 	remoteHead := string(bytes.Fields(b.Bytes())[0])
 
 	b.Reset()
-	cmd = exec.Command("git", "-c", "jobs/"+j.Name, "rev-parse", "HEAD")
+	cmd = exec.Command("git", "-C", config.Git.path(j.Name), "rev-parse", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -116,7 +150,7 @@ func (j *Job) update() {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-c", "jobs/"+j.Name, "pull", "--depth", "1")
+	cmd := exec.Command("git", "-C", config.Git.path(j.Name), "pull", "--depth=1")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -130,6 +164,7 @@ func (j *Job) update() {
 
 type CatarangConfig struct {
 	Jobs []Job
+	Git  GitPluginOptions
 }
 
 var config CatarangConfig
@@ -174,15 +209,20 @@ func renderWebpage(w http.ResponseWriter, r *http.Request) {
 // todo: akelmore - fix threading with the reading/writing of the config
 func readInConfig() {
 	data, err := ioutil.ReadFile(config_file_name)
-	if err != nil {
-		log.Printf("Couldn't find %v, using default values.\n", config_file_name)
+	if err == nil {
+		if err = json.Unmarshal(data, &config); err != nil {
+			log.Println("Error reading in", config_file_name)
+			log.Println(err.Error())
+		}
 		return
 	}
 
-	if err = json.Unmarshal(data, &config); err != nil {
-		log.Println("Error reading in", config_file_name)
-		log.Println(err.Error())
-	}
+	// create a new config and save it out
+	log.Println("No catarang config detected, creating new one.")
+	config.Git.Email = "catarang@austinkelmore.com"
+	config.Git.Username = "catarang"
+	config.Git.Path = "jobs/"
+	saveConfig()
 }
 
 func saveConfig() {
