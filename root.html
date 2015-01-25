@@ -16,9 +16,9 @@
 					Disabled 
 				{{ end }} )
 				<br>
-				git URL: {{ $value.Git_url }}
+				git URL: {{ $value.Config.Repo }}
 				<br>
-				Build Config: {{ $value.BuildConfig }}</li>
+				Build Config: {{ $value.Config.BuildConfig }}</li>
 			{{ end }}
 		</ul>
 		<br>
