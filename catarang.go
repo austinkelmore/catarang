@@ -191,7 +191,7 @@ func pollJobs() {
 				config.Jobs[index].run()
 			}
 		}
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 10)
 	}
 }
 
