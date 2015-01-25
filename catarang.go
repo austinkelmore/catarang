@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -38,10 +39,10 @@ type Job struct {
 	Name       string
 	Enabled    bool
 	running    bool
-	Git_url    string
 	LastRun    time.Time
 	LastStatus JobStatus
 	CurStatus  JobStatus
+	Config     JobConfig
 }
 
 // make git have a username and email for catarang
@@ -64,11 +65,15 @@ func (j *Job) run() {
 	}
 
 	if j.CurStatus != FAILED {
-		switch j.LastStatus {
-		case FAILED:
-			j.CurStatus = RECOVERED
-		default:
-			j.CurStatus = SUCCESSFUL
+		j.runCommand()
+
+		if j.CurStatus != FAILED {
+			switch j.LastStatus {
+			case FAILED:
+				j.CurStatus = RECOVERED
+			default:
+				j.CurStatus = SUCCESSFUL
+			}
 		}
 	}
 
@@ -81,7 +86,13 @@ func (j *Job) firstTimeSetup() {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "clone", j.Git_url, config.Git.path(j.Name))
+	// order to do things:
+	// 1. Clone git repo
+	// 2. Read in config to see if we need anything else
+	// 3. Save Config
+	// 4. Run
+
+	cmd := exec.Command("git", "clone", j.Config.Repo, config.Git.path(j.Name))
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -109,6 +120,23 @@ func (j *Job) firstTimeSetup() {
 		log.Println("Error trying to set git username for:", j.Name)
 		j.CurStatus = FAILED
 		// todo: akelmore - clean up
+		return
+	}
+
+	file, err := ioutil.ReadFile(config.Git.path(j.Name) + j.Config.BuildConfig)
+	if err != nil {
+		log.Printf("Error reading build config file: %v for job: %v\n", j.Config.BuildConfig, j.Name)
+		j.CurStatus = FAILED
+		// todo: akelmore - clean up
+		return
+	}
+
+	err = json.Unmarshal(file, &j.Config)
+	if err != nil {
+		log.Printf("Error reading JSON from build config file: %v for job: %v\n", j.Config.BuildConfig, j.Name)
+		j.CurStatus = FAILED
+		// todo: akelmore - clean up
+		return
 	}
 }
 
@@ -162,6 +190,30 @@ func (j *Job) update() {
 	}
 }
 
+func (j *Job) runCommand() {
+	log.Println("Running command for:", j.Name)
+
+	fields := strings.Fields(j.Config.BuildCommand)
+	if len(fields) > 0 {
+		var b bytes.Buffer
+		multi := io.MultiWriter(&b, os.Stdout)
+		cmd := exec.Command(fields[0], fields[1:]...)
+		cmd.Stdout = multi
+		cmd.Stderr = multi
+		cmd.Dir = config.Git.path(j.Name)
+		if err := cmd.Run(); err != nil {
+			log.Println("ERROR RUNNING BUILD:", j.Name)
+			return
+		}
+	}
+}
+
+type JobConfig struct {
+	Repo         string
+	BuildConfig  string
+	BuildCommand string
+}
+
 type CatarangConfig struct {
 	Jobs []Job
 	Git  GitPluginOptions
@@ -173,7 +225,8 @@ var config_file_name = "catarang_config.json"
 func addJob(w http.ResponseWriter, r *http.Request) {
 	job := Job{Enabled: true}
 	job.Name = r.FormValue("name")
-	job.Git_url = r.FormValue("git_url")
+	job.Config.Repo = r.FormValue("repo")
+	job.Config.BuildConfig = r.FormValue("build_config")
 	config.Jobs = append(config.Jobs, job)
 	saveConfig()
 
