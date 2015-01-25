@@ -81,7 +81,7 @@ func (j *Job) firstTimeSetup() {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "clone", "--depth", "1", j.Git_url, config.Git.path(j.Name))
+	cmd := exec.Command("git", "clone", j.Git_url, config.Git.path(j.Name))
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -150,7 +150,7 @@ func (j *Job) update() {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-C", config.Git.path(j.Name), "pull", "--depth=1")
+	cmd := exec.Command("git", "-C", config.Git.path(j.Name), "pull")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
