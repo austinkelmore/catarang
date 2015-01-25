@@ -70,8 +70,10 @@ func (j *Job) run() {
 		if j.CurStatus != FAILED {
 			switch j.LastStatus {
 			case FAILED:
+				log.Println("Build has recovered!")
 				j.CurStatus = RECOVERED
 			default:
+				log.Println("Build has succeeded!")
 				j.CurStatus = SUCCESSFUL
 			}
 		}
