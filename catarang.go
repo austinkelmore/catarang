@@ -205,6 +205,7 @@ func (j *Job) runCommand() {
 		cmd.Dir = config.Git.path(j.Name)
 		if err := cmd.Run(); err != nil {
 			log.Println("ERROR RUNNING BUILD:", j.Name)
+			j.CurStatus = FAILED
 			return
 		}
 	}
