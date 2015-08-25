@@ -39,12 +39,6 @@ const (
 )
 
 // todo: akelmore - pull instance out into its own thing
-type Instance struct {
-	StartTime time.Time
-	EndTime   time.Time
-	Config    Config
-	Status    Status
-}
 
 type Job struct {
 	Name    string
@@ -74,11 +68,11 @@ func (j *Job) isRunning() bool {
 	return inst != nil && inst.Status == RUNNING
 }
 
-func (j *Job) needsRunning() bool {
+func (j *Job) NeedsRunning() bool {
 	return len(j.History) == 0 || j.needsUpdate()
 }
 
-func (j *Job) run() {
+func (j *Job) Run() {
 	log.Println("Running job:", j.Name)
 	inst := Instance{StartTime: time.Now(), Config: j.Config, Status: RUNNING}
 	j.History = append(j.History, inst)

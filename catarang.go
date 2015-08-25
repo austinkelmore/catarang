@@ -12,8 +12,7 @@ import (
 )
 
 type Config struct {
-	Jobs []Job
-	Git  GitPluginOptions
+	Jobs []job.Job
 }
 
 var config Config
@@ -21,7 +20,7 @@ var config_file_name = "catarang_config.json"
 
 func addJob(w http.ResponseWriter, r *http.Request) {
 	jobConfig := job.Config{Repo: r.FormValue("repo"), BuildConfig: r.FormValue("build_config")}
-	job := CreateJob(r.FormValue("name"), jobConfig)
+	job := job.CreateJob(r.FormValue("name"), jobConfig)
 	// job.Config.Repo = r.FormValue("repo")
 	// job.Config.BuildConfig = r.FormValue("build_config")
 	config.Jobs = append(config.Jobs, job)
@@ -37,8 +36,8 @@ func deleteJob(w http.ResponseWriter, r *http.Request) {
 func pollJobs() {
 	for {
 		for index := range config.Jobs {
-			if config.Jobs[index].needsRunning() {
-				config.Jobs[index].run()
+			if config.Jobs[index].NeedsRunning() {
+				config.Jobs[index].Run()
 			}
 		}
 		time.Sleep(time.Second * 10)
