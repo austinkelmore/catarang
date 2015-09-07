@@ -1,1 +1,1 @@
-This is going to be a Continuous Integration build server. It's going to be built for the Gopher Gala initially, and then expanded on later.
+This is a Continuous Integration build server. It was originally being built for the Gopher Gala, but is now being expanded into a full fledged CI server.

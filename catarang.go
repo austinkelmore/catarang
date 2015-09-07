@@ -16,13 +16,10 @@ type Config struct {
 }
 
 var config Config
-var config_file_name = "catarang_config.json"
+var configFileName = "catarang_config.json"
 
 func addJob(w http.ResponseWriter, r *http.Request) {
-	jobConfig := job.Config{Repo: r.FormValue("repo"), BuildConfig: r.FormValue("build_config")}
-	job := job.CreateJob(r.FormValue("name"), jobConfig)
-	// job.Config.Repo = r.FormValue("repo")
-	// job.Config.BuildConfig = r.FormValue("build_config")
+	job := job.CreateJob(r.FormValue("name"), r.FormValue("repo"), r.FormValue("build_config"))
 	config.Jobs = append(config.Jobs, job)
 	saveConfig()
 
@@ -57,10 +54,10 @@ func renderWebpage(w http.ResponseWriter, r *http.Request) {
 
 // todo: akelmore - fix threading with the reading/writing of the config
 func readInConfig() {
-	data, err := ioutil.ReadFile(config_file_name)
+	data, err := ioutil.ReadFile(configFileName)
 	if err == nil {
 		if err = json.Unmarshal(data, &config); err != nil {
-			log.Println("Error reading in", config_file_name)
+			log.Println("Error reading in", configFileName)
 			log.Println(err.Error())
 		}
 		return
@@ -78,9 +75,9 @@ func saveConfig() {
 		return
 	}
 
-	err = ioutil.WriteFile(config_file_name, []byte(data), 0644)
+	err = ioutil.WriteFile(configFileName, []byte(data), 0644)
 	if err != nil {
-		log.Println("Error writing config file", config_file_name)
+		log.Println("Error writing config file", configFileName)
 		log.Println(err.Error())
 	}
 }

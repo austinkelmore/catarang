@@ -1,5 +1,3 @@
 {
-	"Repo": "https://github.com/gophergala/catarang.git",
-	"BuildConfig": "build_catarang.json",
-	"BuildCommand": "go build"
+	"ExecCommand": "go build"
 }

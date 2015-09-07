@@ -2,33 +2,15 @@ package job
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/austinkelmore/catarang/scm"
 )
-
-// todo: akelmore - move git stuff out of the job
-type GitPluginOptions struct {
-	Username string
-	Email    string
-	Path     string
-}
-
-func (g *GitPluginOptions) path(name string) string {
-	return g.Path + name + "/"
-}
-
-type Config struct {
-	Repo         string
-	BuildConfig  string
-	BuildCommand string
-	Git          GitPluginOptions
-}
 
 type Status int
 
@@ -38,20 +20,29 @@ const (
 	SUCCESSFUL
 )
 
-// todo: akelmore - pull instance out into its own thing
-
-type Job struct {
-	Name    string
-	Enabled bool
-	Config  Config
-	History []Instance
+type Config struct {
+	LocalPath       string
+	BuildConfigPath string
+	// todo: akelmore - make the build command more robust than a string
+	BuildCommand string
+	// todo: akelmore don't hard code the git scm in the job config
+	Git scm.Git
 }
 
-func CreateJob(name string, config Config) Job {
-	job := Job{Name: name, Config: config, Enabled: true}
-	job.Config.Git.Email = "catarang@austinkelmore.com"
-	job.Config.Git.Username = "catarang"
-	job.Config.Git.Path = "jobs/"
+type Job struct {
+	Name      string
+	Enabled   bool
+	CurConfig Config
+	History   []Instance
+}
+
+func CreateJob(name string, onlineRepo string, configPath string) Job {
+	job := Job{Name: name, Enabled: true}
+
+	job.CurConfig.BuildConfigPath = configPath
+	// todo: akelmore - configure local path
+	job.CurConfig.LocalPath = "jobs/" + name + "/"
+	job.CurConfig.Git = scm.CreateGit(job.CurConfig.LocalPath, onlineRepo)
 	return job
 }
 
@@ -74,11 +65,16 @@ func (j *Job) NeedsRunning() bool {
 
 func (j *Job) Run() {
 	log.Println("Running job:", j.Name)
-	inst := Instance{StartTime: time.Now(), Config: j.Config, Status: RUNNING}
+	inst := NewInstance(j.CurConfig)
 	j.History = append(j.History, inst)
 
+	// todo: akelmore - track whether the first time setup ever worked instead of seeing if this is the first instance
 	if len(j.History) == 0 {
-		j.firstTimeSetup()
+		log.Println("Running first time setup for:", j.Name)
+		if err := inst.Config.Git.FirstTimeSetup(); err != nil {
+			log.Println(err.Error())
+			inst.Status = FAILED
+		}
 	} else {
 		j.update()
 	}
@@ -89,68 +85,6 @@ func (j *Job) Run() {
 
 	// todo: akelmore - figure out what to do with this
 	// saveConfig()
-}
-
-func (j *Job) firstTimeSetup() {
-	log.Println("Running first time setup for:", j.Name)
-
-	var b bytes.Buffer
-	multi := io.MultiWriter(&b, os.Stdout)
-
-	// order to do things:
-	// 1. Clone git repo
-	// 2. Read in config to see if we need anything else
-	// 3. Save Config
-	// 4. Run
-
-	inst := j.getLastInst()
-
-	cmd := exec.Command("git", "clone", inst.Config.Repo, inst.Config.Git.path(j.Name))
-	cmd.Stdout = multi
-	cmd.Stderr = multi
-	if err := cmd.Run(); err != nil {
-		log.Println("Error doing first time setup for:", j.Name)
-		inst.Status = FAILED
-		return
-	}
-
-	b.Reset()
-	cmd = exec.Command("git", "-C", inst.Config.Git.path(j.Name), "config", "user.email", inst.Config.Git.Email)
-	cmd.Stdout = multi
-	cmd.Stderr = multi
-	if err := cmd.Run(); err != nil {
-		log.Println("Error trying to set git email for:", j.Name)
-		inst.Status = FAILED
-		// todo: akelmore - clean up
-		return
-	}
-
-	b.Reset()
-	cmd = exec.Command("git", "-C", inst.Config.Git.path(j.Name), "config", "user.name", inst.Config.Git.Username)
-	cmd.Stdout = multi
-	cmd.Stderr = multi
-	if err := cmd.Run(); err != nil {
-		log.Println("Error trying to set git username for:", j.Name)
-		inst.Status = FAILED
-		// todo: akelmore - clean up
-		return
-	}
-
-	file, err := ioutil.ReadFile(inst.Config.Git.path(j.Name) + j.Config.BuildConfig)
-	if err != nil {
-		log.Printf("Error reading build config file: %v for job: %v\n", j.Config.BuildConfig, j.Name)
-		inst.Status = FAILED
-		// todo: akelmore - clean up
-		return
-	}
-
-	err = json.Unmarshal(file, &j.Config)
-	if err != nil {
-		log.Printf("Error reading JSON from build config file: %v for job: %v\n", j.Config.BuildConfig, j.Name)
-		inst.Status = FAILED
-		// todo: akelmore - clean up
-		return
-	}
 }
 
 func (j *Job) needsUpdate() bool {
@@ -164,7 +98,7 @@ func (j *Job) needsUpdate() bool {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
-	cmd := exec.Command("git", "-C", inst.Config.Git.path(j.Name), "ls-remote", "origin", "-h", "HEAD")
+	cmd := exec.Command("git", "-C", inst.Config.Git.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -174,7 +108,7 @@ func (j *Job) needsUpdate() bool {
 	remoteHead := string(bytes.Fields(b.Bytes())[0])
 
 	b.Reset()
-	cmd = exec.Command("git", "-C", inst.Config.Git.path(j.Name), "rev-parse", "HEAD")
+	cmd = exec.Command("git", "-C", inst.Config.Git.LocalRepo, "rev-parse", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
@@ -191,18 +125,8 @@ func (j *Job) update() {
 
 	inst := j.getLastInst()
 
-	var b bytes.Buffer
-	multi := io.MultiWriter(&b, os.Stdout)
+	if err := inst.UpdateSCMandBuildCommand(); err != nil {
 
-	cmd := exec.Command("git", "-C", inst.Config.Git.path(j.Name), "pull")
-	cmd.Stdout = multi
-	cmd.Stderr = multi
-	if err := cmd.Run(); err != nil {
-		log.Println("Error pulling git for:", j.Name)
-		inst.Status = FAILED
-	} else if bytes.Contains(b.Bytes(), []byte("Already up-to-date.")) {
-		log.Println("Something went wrong with the git pull, it was already up to date. It shouldn't have been.")
-		inst.Status = FAILED
 	}
 }
 
@@ -211,14 +135,14 @@ func (j *Job) runCommand() {
 
 	inst := j.getLastInst()
 
-	fields := strings.Fields(j.Config.BuildCommand)
+	fields := strings.Fields(inst.Config.BuildCommand)
 	if len(fields) > 0 {
 		var b bytes.Buffer
 		multi := io.MultiWriter(&b, os.Stdout)
 		cmd := exec.Command(fields[0], fields[1:]...)
 		cmd.Stdout = multi
 		cmd.Stderr = multi
-		cmd.Dir = inst.Config.Git.path(j.Name)
+		cmd.Dir = inst.Config.Git.LocalRepo
 		if err := cmd.Run(); err != nil {
 			log.Println("ERROR RUNNING BUILD:", j.Name)
 			inst.Status = FAILED
