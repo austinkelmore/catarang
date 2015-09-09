@@ -35,6 +35,7 @@ func pollJobs() {
 		for index := range config.Jobs {
 			if config.Jobs[index].NeedsRunning() {
 				config.Jobs[index].Run()
+				saveConfig()
 			}
 		}
 		time.Sleep(time.Second * 10)
@@ -83,6 +84,7 @@ func saveConfig() {
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("Running Catarang!")
 	readInConfig()
 

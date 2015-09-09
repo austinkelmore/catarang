@@ -16,9 +16,9 @@
 					Disabled
 				{{ end }} )
 				<br>
-				git URL: {{ $value.Config.Repo }}
+				Online Repo: {{ $value.CurConfig.Git.OnlineRepo }}
 				<br>
-				Build Config: {{ $value.Config.BuildConfig }}</li>
+				Build Config Path: {{ $value.CurConfig.BuildConfigPath }}</li>
 			{{ end }}
 		</ul>
 		<br>
