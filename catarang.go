@@ -43,7 +43,7 @@ func pollJobs() {
 }
 
 func renderWebpage(w http.ResponseWriter, r *http.Request) {
-	root, err := template.ParseFiles("root.html")
+	root, err := template.ParseFiles("web/root.html")
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

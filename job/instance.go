@@ -3,7 +3,6 @@ package job
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,25 +23,6 @@ type Instance struct {
 
 func NewInstance(config Config) Instance {
 	return Instance{StartTime: time.Now(), Status: RUNNING, Config: config}
-}
-
-func (i *Instance) UpdateSCM() error {
-	var b bytes.Buffer
-	multi := io.MultiWriter(&b, os.Stdout)
-
-	// update the git repo
-	// todo: akelmore - pull into the git scm module
-	cmd := exec.Command("git", "-C", i.Config.Git.LocalRepo, "pull")
-	cmd.Stdout = multi
-	cmd.Stderr = multi
-	if err := cmd.Run(); err != nil {
-		log.Println("Error pulling git")
-		return err
-	} else if bytes.Contains(b.Bytes(), []byte("Already up-to-date.")) {
-		return errors.New("Something went wrong with the git pull, it was already up to date. It shouldn't have been.")
-	}
-
-	return nil
 }
 
 func (i *Instance) updateBuildCommand() error {
