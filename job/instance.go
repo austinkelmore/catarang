@@ -12,6 +12,19 @@ import (
 	"time"
 )
 
+// Status The job instance's status
+type Status int
+
+const (
+	// RUNNING The job instance is currently running
+	RUNNING Status = iota
+	// FAILED The job instance failed
+	FAILED
+	// SUCCESSFUL The job instance was successful
+	SUCCESSFUL
+)
+
+// Instance a single run of a job
 type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
@@ -19,10 +32,19 @@ type Instance struct {
 	// todo: akelmore - make the build command more robust than a string
 	BuildCommand BuildCommand
 	Status       Status
+	Out          io.Writer
+	Err          io.Writer
 }
 
+// NewInstance Creates a new instance of a job (and copies off the current config)
+// and starts the instance running
 func NewInstance(config Config) Instance {
-	return Instance{StartTime: time.Now(), Status: RUNNING, Config: config}
+	inst := Instance{StartTime: time.Now(), Status: RUNNING, Config: config}
+	var bOut bytes.Buffer
+	inst.Out = io.MultiWriter(&bOut, os.Stdout)
+	var bErr bytes.Buffer
+	inst.Err = io.MultiWriter(&bErr, os.Stderr)
+	return inst
 }
 
 func (i *Instance) updateBuildCommand() error {
@@ -42,7 +64,8 @@ func (i *Instance) updateBuildCommand() error {
 	return nil
 }
 
-func (i *Instance) RunExecCommand() error {
+// Start Entry point for the instance
+func (i *Instance) Start() error {
 	if err := i.updateBuildCommand(); err != nil {
 		log.Println("Error updating build command from config file.")
 		return err
@@ -50,11 +73,9 @@ func (i *Instance) RunExecCommand() error {
 
 	fields := strings.Fields(i.BuildCommand.ExecCommand)
 	if len(fields) > 0 {
-		var b bytes.Buffer
-		multi := io.MultiWriter(&b, os.Stdout)
 		cmd := exec.Command(fields[0], fields[1:]...)
-		cmd.Stdout = multi
-		cmd.Stderr = multi
+		cmd.Stdout = i.Out
+		cmd.Stderr = i.Err
 		cmd.Dir = i.Config.Git.LocalRepo
 		if err := cmd.Run(); err != nil {
 			log.Println("Error running exec command.")

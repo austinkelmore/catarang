@@ -7,14 +7,6 @@ import (
 	"github.com/austinkelmore/catarang/scm"
 )
 
-type Status int
-
-const (
-	RUNNING Status = iota
-	FAILED
-	SUCCESSFUL
-)
-
 type Config struct {
 	LocalPath       string
 	BuildConfigPath string
@@ -30,13 +22,13 @@ type Job struct {
 	History        []Instance
 }
 
-func CreateJob(name string, onlineRepo string, configPath string) Job {
+func NewJob(name string, onlineRepo string, configPath string) Job {
 	job := Job{Name: name, Enabled: true, CompletedSetup: false}
 
 	job.CurConfig.BuildConfigPath = configPath
 	// todo: akelmore - configure local path
 	job.CurConfig.LocalPath = "jobs/" + name + "/"
-	job.CurConfig.Git = scm.CreateGit(job.CurConfig.LocalPath, onlineRepo)
+	job.CurConfig.Git = scm.NewGit(job.CurConfig.LocalPath, onlineRepo)
 	return job
 }
 
@@ -54,26 +46,28 @@ func (j *Job) NeedsRunning() bool {
 
 func (j *Job) Run() {
 	log.Println("Running job:", j.Name)
+
+	// create a new instance and start it up
 	j.History = append(j.History, NewInstance(j.CurConfig))
 	inst := &j.History[len(j.History)-1]
 
 	if !j.CompletedSetup {
 		log.Println("Running first time setup for:", j.Name)
-		if err := inst.Config.Git.FirstTimeSetup(); err != nil {
+		if err := inst.Config.Git.FirstTimeSetup(&inst.Out, &inst.Err); err != nil {
 			log.Println("Error in first time setup: " + err.Error())
 			inst.Status = FAILED
 		} else {
 			j.CompletedSetup = true
 		}
 	} else {
-		if err := inst.Config.Git.UpdateExisting(); err != nil {
+		if err := inst.Config.Git.UpdateExisting(&inst.Out, &inst.Err); err != nil {
 			log.Println("Error updating an existing depot: " + err.Error())
 			inst.Status = FAILED
 		}
 	}
 
 	if inst.Status != FAILED {
-		if err := inst.RunExecCommand(); err != nil {
+		if err := inst.Start(); err != nil {
 			log.Println("Error running exec command: " + err.Error())
 			inst.Status = FAILED
 		}
@@ -90,5 +84,6 @@ func (j *Job) needsUpdate() bool {
 	}
 	log.Println("Running needsUpdate for:", j.Name)
 
+	// todo: akelmore - make these use a real log
 	return j.CurConfig.Git.Poll()
 }

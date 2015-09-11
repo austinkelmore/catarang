@@ -11,6 +11,7 @@ import (
 	"github.com/austinkelmore/catarang/job"
 )
 
+// Config All of the run time data for the Catarang server
 type Config struct {
 	Jobs []job.Job
 }
@@ -19,7 +20,7 @@ var config Config
 var configFileName = "catarang_config.json"
 
 func addJob(w http.ResponseWriter, r *http.Request) {
-	job := job.CreateJob(r.FormValue("name"), r.FormValue("repo"), r.FormValue("build_config"))
+	job := job.NewJob(r.FormValue("name"), r.FormValue("repo"), r.FormValue("build_config"))
 	config.Jobs = append(config.Jobs, job)
 	saveConfig()
 
@@ -65,7 +66,7 @@ func readInConfig() {
 	}
 
 	// create a new config and save it out
-	log.Println("No catarang config detected, creating new one.")
+	log.Println("No Catarang config detected, creating new one.")
 	saveConfig()
 }
 

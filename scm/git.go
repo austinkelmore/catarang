@@ -9,29 +9,28 @@ import (
 	"os/exec"
 )
 
-func CreateGit(localPath string, onlineRepo string) Git {
+// NewGit Creates the git handler
+func NewGit(localPath string, onlineRepo string) Git {
 	// todo: akelmore - extract out email and username
-	// todo: akelmore - make the local repo root configurable
 	return Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
 		LocalRepo: localPath, OnlineRepo: onlineRepo}
 }
 
+// Authentication authentication info for the git handler
 type Authentication struct {
 	Username string
 	Email    string
 }
 
+// Git The git handler
 type Git struct {
 	Auth       Authentication
 	LocalRepo  string
 	OnlineRepo string
 }
 
-func (g *Git) FirstTimeSetup() error {
-	// todo: akelmore - pull out the multiwriter into main catarang part and pass in
-	var b bytes.Buffer
-	multi := io.MultiWriter(&b, os.Stdout)
-
+// FirstTimeSetup Clone the git repository and setup the email and username
+func (g *Git) FirstTimeSetup(outWriter *io.Writer, errWriter *io.Writer) error {
 	// order to do things:
 	// 1. Clone git repo
 	// 2. Read in config to see if we need anything else
@@ -39,26 +38,24 @@ func (g *Git) FirstTimeSetup() error {
 	// 4. Run
 
 	cmd := exec.Command("git", "clone", g.OnlineRepo, g.LocalRepo)
-	cmd.Stdout = multi
-	cmd.Stderr = multi
+	cmd.Stdout = *outWriter
+	cmd.Stderr = *errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error doing first time setup for: " + g.OnlineRepo)
 		return err
 	}
 
-	b.Reset()
 	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.email", g.Auth.Email)
-	cmd.Stdout = multi
-	cmd.Stderr = multi
+	cmd.Stdout = *outWriter
+	cmd.Stderr = *errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error trying to set git email for: " + g.Auth.Email)
 		return err
 	}
 
-	b.Reset()
 	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.name", g.Auth.Username)
-	cmd.Stdout = multi
-	cmd.Stderr = multi
+	cmd.Stdout = *outWriter
+	cmd.Stderr = *errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error trying to set git username for: " + g.Auth.Username)
 		return err
@@ -67,8 +64,9 @@ func (g *Git) FirstTimeSetup() error {
 	return nil
 }
 
+// Poll polls the git master to see if the local repository is different from the master's head
+// todo: akelmore - log this more appropriately by the job rather than leaving it be
 func (g *Git) Poll() bool {
-	// todo: akelmore - pull this multiwriter into Job so it can be output on the web
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
@@ -96,17 +94,16 @@ func (g *Git) Poll() bool {
 	return remoteHead != localHead
 }
 
-func (g *Git) UpdateExisting() error {
-	return nil
-
+// UpdateExisting syncs the git repository
+func (g *Git) UpdateExisting(outWriter *io.Writer, errWriter *io.Writer) error {
 	var b bytes.Buffer
-	multi := io.MultiWriter(&b, os.Stdout)
+	multi := io.MultiWriter(&b, *outWriter)
 
 	// update the git repo
 	// todo: akelmore - pull into the git scm module
 	cmd := exec.Command("git", "-C", g.LocalRepo, "pull")
 	cmd.Stdout = multi
-	cmd.Stderr = multi
+	cmd.Stderr = *errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error pulling git")
 		return err
