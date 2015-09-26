@@ -49,7 +49,7 @@ func NewInstance(config Config) Instance {
 
 func (i *Instance) updateBuildCommand() error {
 	// read in the config file's build command
-	file, err := ioutil.ReadFile(i.Config.Git.LocalRepo + i.Config.BuildConfigPath)
+	file, err := ioutil.ReadFile(i.Config.SourceControl.LocalRepoPath() + i.Config.BuildConfigPath)
 	if err != nil {
 		log.Println("Error reading build config file: " + i.Config.BuildConfigPath)
 		return err
@@ -76,7 +76,7 @@ func (i *Instance) Start() error {
 		cmd := exec.Command(fields[0], fields[1:]...)
 		cmd.Stdout = i.Out
 		cmd.Stderr = i.Err
-		cmd.Dir = i.Config.Git.LocalRepo
+		cmd.Dir = i.Config.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			log.Println("Error running exec command.")
 			return err

@@ -10,8 +10,7 @@ import (
 type Config struct {
 	LocalPath       string
 	BuildConfigPath string
-	// todo: akelmore don't hard code the git scm in the job config
-	Git scm.Git
+	SourceControl   scm.SCMer
 }
 
 type Job struct {
@@ -28,7 +27,7 @@ func NewJob(name string, onlineRepo string, configPath string) Job {
 	job.CurConfig.BuildConfigPath = configPath
 	// todo: akelmore - configure local path
 	job.CurConfig.LocalPath = "jobs/" + name + "/"
-	job.CurConfig.Git = scm.NewGit(job.CurConfig.LocalPath, onlineRepo)
+	job.CurConfig.SourceControl = scm.NewGit(job.CurConfig.LocalPath, onlineRepo)
 	return job
 }
 
@@ -53,14 +52,14 @@ func (j *Job) Run() {
 
 	if !j.CompletedSetup {
 		log.Println("Running first time setup for:", j.Name)
-		if err := inst.Config.Git.FirstTimeSetup(&inst.Out, &inst.Err); err != nil {
+		if err := inst.Config.SourceControl.FirstTimeSetup(&inst.Out, &inst.Err); err != nil {
 			log.Println("Error in first time setup: " + err.Error())
 			inst.Status = FAILED
 		} else {
 			j.CompletedSetup = true
 		}
 	} else {
-		if err := inst.Config.Git.UpdateExisting(&inst.Out, &inst.Err); err != nil {
+		if err := inst.Config.SourceControl.UpdateExisting(&inst.Out, &inst.Err); err != nil {
 			log.Println("Error updating an existing depot: " + err.Error())
 			inst.Status = FAILED
 		}
@@ -85,5 +84,5 @@ func (j *Job) needsUpdate() bool {
 	log.Println("Running needsUpdate for:", j.Name)
 
 	// todo: akelmore - make these use a real log
-	return j.CurConfig.Git.Poll()
+	return j.CurConfig.SourceControl.Poll()
 }

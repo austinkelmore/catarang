@@ -10,9 +10,9 @@ import (
 )
 
 // NewGit Creates the git handler
-func NewGit(localPath string, onlineRepo string) Git {
+func NewGit(localPath string, onlineRepo string) *Git {
 	// todo: akelmore - extract out email and username
-	return Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
+	return &Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
 		LocalRepo: localPath, OnlineRepo: onlineRepo}
 }
 
@@ -65,7 +65,6 @@ func (g *Git) FirstTimeSetup(outWriter *io.Writer, errWriter *io.Writer) error {
 }
 
 // Poll polls the git master to see if the local repository is different from the master's head
-// todo: akelmore - log this more appropriately by the job rather than leaving it be
 func (g *Git) Poll() bool {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
@@ -100,7 +99,6 @@ func (g *Git) UpdateExisting(outWriter *io.Writer, errWriter *io.Writer) error {
 	multi := io.MultiWriter(&b, *outWriter)
 
 	// update the git repo
-	// todo: akelmore - pull into the git scm module
 	cmd := exec.Command("git", "-C", g.LocalRepo, "pull")
 	cmd.Stdout = multi
 	cmd.Stderr = *errWriter
@@ -112,4 +110,9 @@ func (g *Git) UpdateExisting(outWriter *io.Writer, errWriter *io.Writer) error {
 	}
 
 	return nil
+}
+
+// LocalRepoPath returns the local path to the repository
+func (g *Git) LocalRepoPath() string {
+	return g.LocalRepo
 }
