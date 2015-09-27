@@ -34,8 +34,7 @@ func (g *Git) FirstTimeSetup(outWriter *io.Writer, errWriter *io.Writer) error {
 	// order to do things:
 	// 1. Clone git repo
 	// 2. Read in config to see if we need anything else
-	// 3. Save Config
-	// 4. Run
+	// 3. Run
 
 	cmd := exec.Command("git", "clone", g.OnlineRepo, g.LocalRepo)
 	cmd.Stdout = *outWriter
@@ -45,6 +44,8 @@ func (g *Git) FirstTimeSetup(outWriter *io.Writer, errWriter *io.Writer) error {
 		return err
 	}
 
+	// set up the authentication for the repo
+	// todo: akelmore - do i need this authentication here, or should it be placed elsewhere for git?
 	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.email", g.Auth.Email)
 	cmd.Stdout = *outWriter
 	cmd.Stderr = *errWriter

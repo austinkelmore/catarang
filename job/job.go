@@ -10,7 +10,8 @@ import (
 type Config struct {
 	LocalPath       string
 	BuildConfigPath string
-	SourceControl   scm.SCMer
+	// todo: akelmore - don't use git instead of an interface for scms. Fix saving/loading interface
+	SourceControl *scm.Git
 }
 
 type Job struct {
