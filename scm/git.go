@@ -30,7 +30,7 @@ type Git struct {
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
-func (g *Git) FirstTimeSetup(outWriter *io.Writer, errWriter *io.Writer) error {
+func (g Git) FirstTimeSetup(outWriter io.Writer, errWriter io.Writer) error {
 	// order to do things:
 	// 1. Clone git repo
 	// 2. Read in config to see if we need anything else
@@ -38,24 +38,24 @@ func (g *Git) FirstTimeSetup(outWriter *io.Writer, errWriter *io.Writer) error {
 	// 4. Run
 
 	cmd := exec.Command("git", "clone", g.OnlineRepo, g.LocalRepo)
-	cmd.Stdout = *outWriter
-	cmd.Stderr = *errWriter
+	cmd.Stdout = outWriter
+	cmd.Stderr = errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error doing first time setup for: " + g.OnlineRepo)
 		return err
 	}
 
 	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.email", g.Auth.Email)
-	cmd.Stdout = *outWriter
-	cmd.Stderr = *errWriter
+	cmd.Stdout = outWriter
+	cmd.Stderr = errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error trying to set git email for: " + g.Auth.Email)
 		return err
 	}
 
 	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.name", g.Auth.Username)
-	cmd.Stdout = *outWriter
-	cmd.Stderr = *errWriter
+	cmd.Stdout = outWriter
+	cmd.Stderr = errWriter
 	if err := cmd.Run(); err != nil {
 		log.Println("Error trying to set git username for: " + g.Auth.Username)
 		return err
