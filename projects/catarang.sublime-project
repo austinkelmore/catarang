@@ -3,7 +3,11 @@
 	[
 		{
 			"path": "../",
-			"folder_exclude_patterns": ["jobs"]
+			"folder_exclude_patterns": ["jobs", "tests/test_repos"]
+		},
+		{
+			"path": "/usr/local/go/src",
+			"name": "go src"
 		}
 	]
 }

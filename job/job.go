@@ -53,7 +53,7 @@ func (j *Job) Run() {
 
 	if !j.CompletedSetup {
 		log.Println("Running first time setup for:", j.Name)
-		if err := inst.Config.SourceControl.FirstTimeSetup(&inst.Out, &inst.Err); err != nil {
+		if err := inst.Config.SourceControl.FirstTimeSetup(inst.Out, inst.Err); err != nil {
 			log.Println("Error in first time setup: " + err.Error())
 			inst.Status = FAILED
 		} else {
