@@ -1,3 +1,3 @@
 jobs/
 projects/*.sublime-workspace
-tests/test_repos/
+tests/
