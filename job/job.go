@@ -28,7 +28,7 @@ func NewJob(name string, onlineRepo string, configPath string) Job {
 	job.CurConfig.BuildConfigPath = configPath
 	// todo: akelmore - configure local path
 	job.CurConfig.LocalPath = "jobs/" + name + "/"
-	job.CurConfig.SourceControl = scm.NewGit(job.CurConfig.LocalPath, onlineRepo)
+	job.CurConfig.SourceControl = scm.NewGit(onlineRepo, job.CurConfig.LocalPath)
 	return job
 }
 
@@ -85,5 +85,9 @@ func (j *Job) needsUpdate() bool {
 	log.Println("Running needsUpdate for:", j.Name)
 
 	// todo: akelmore - make these use a real log
-	return j.CurConfig.SourceControl.Poll()
+	shouldRun, err := j.CurConfig.SourceControl.Poll()
+	if err != nil {
+		log.Println(err.Error())
+	}
+	return shouldRun
 }

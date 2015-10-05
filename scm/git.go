@@ -10,7 +10,7 @@ import (
 )
 
 // NewGit Creates the git handler
-func NewGit(localPath string, onlineRepo string) *Git {
+func NewGit(onlineRepo string, localPath string) *Git {
 	// todo: akelmore - extract out email and username
 	return &Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
 		LocalRepo: localPath, OnlineRepo: onlineRepo}
@@ -66,7 +66,7 @@ func (g Git) FirstTimeSetup(outWriter io.Writer, errWriter io.Writer) error {
 }
 
 // Poll polls the git master to see if the local repository is different from the master's head
-func (g *Git) Poll() bool {
+func (g *Git) Poll() (bool, error) {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, os.Stdout)
 
@@ -75,7 +75,7 @@ func (g *Git) Poll() bool {
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
 		log.Println("Error polling head of git repo: " + err.Error())
-		return false
+		return false, err
 	}
 
 	remoteHead := string(bytes.Fields(b.Bytes())[0])
@@ -86,12 +86,12 @@ func (g *Git) Poll() bool {
 	cmd.Stderr = multi
 	if err := cmd.Run(); err != nil {
 		log.Println("Error finding head of local repo: " + err.Error())
-		return false
+		return false, err
 	}
 
 	localHead := string(bytes.Fields(b.Bytes())[0])
 
-	return remoteHead != localHead
+	return remoteHead != localHead, nil
 }
 
 // UpdateExisting syncs the git repository
