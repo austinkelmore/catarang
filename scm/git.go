@@ -10,10 +10,10 @@ import (
 )
 
 // NewGit Creates the git handler
-func NewGit(onlineRepo string, localPath string) *Git {
+func NewGit(origin string, localPath string) *Git {
 	// todo: akelmore - extract out email and username
 	return &Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
-		LocalRepo: localPath, OnlineRepo: onlineRepo}
+		LocalRepo: localPath, Origin: origin}
 }
 
 // Authentication authentication info for the git handler
@@ -24,9 +24,9 @@ type Authentication struct {
 
 // Git The git handler
 type Git struct {
-	Auth       Authentication
-	LocalRepo  string
-	OnlineRepo string
+	Auth      Authentication
+	LocalRepo string
+	Origin    string
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
@@ -36,11 +36,11 @@ func (g Git) FirstTimeSetup(outWriter io.Writer, errWriter io.Writer) error {
 	// 2. Read in config to see if we need anything else
 	// 3. Run
 
-	cmd := exec.Command("git", "clone", g.OnlineRepo, g.LocalRepo)
+	cmd := exec.Command("git", "clone", g.Origin, g.LocalRepo)
 	cmd.Stdout = outWriter
 	cmd.Stderr = errWriter
 	if err := cmd.Run(); err != nil {
-		log.Println("Error doing first time setup for: " + g.OnlineRepo)
+		log.Println("Error doing first time setup for: " + g.Origin)
 		return err
 	}
 

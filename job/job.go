@@ -22,13 +22,13 @@ type Job struct {
 	History        []Instance
 }
 
-func NewJob(name string, onlineRepo string, configPath string) Job {
+func NewJob(name string, origin string, configPath string) Job {
 	job := Job{Name: name, Enabled: true, CompletedSetup: false}
 
 	job.CurConfig.BuildConfigPath = configPath
 	// todo: akelmore - configure local path
 	job.CurConfig.LocalPath = "jobs/" + name + "/"
-	job.CurConfig.SourceControl = scm.NewGit(onlineRepo, job.CurConfig.LocalPath)
+	job.CurConfig.SourceControl = scm.NewGit(origin, job.CurConfig.LocalPath)
 	return job
 }
 

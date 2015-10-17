@@ -121,14 +121,14 @@ func TestGitExists(t *testing.T) {
 	}
 }
 
-func TestGitFirstTimeSetup(t *testing.T) {
+func TestFirstTimeSetup(t *testing.T) {
 	_, err := setupTest(t, "../tests/FirstTimeSetupOrigin/", "../tests/FirstTimeSetup")
 	if err != nil {
 		t.Error(err.Error())
 	}
 }
 
-func TestGitFirstTimeSetupFail(t *testing.T) {
+func TestFirstTimeSetupFail(t *testing.T) {
 	git := scm.NewGit("bogus_repo_path", "../tests/FirstTimeSetupFail")
 
 	b := new(bytes.Buffer)
@@ -139,15 +139,13 @@ func TestGitFirstTimeSetupFail(t *testing.T) {
 	}
 }
 
-func TestGitPoll(t *testing.T) {
+func TestPoll(t *testing.T) {
 	origin := "../tests/PollOrigin/"
 	testrepo := "../tests/Poll/"
-	git, err := setupTest(t, origin, testrepo)
-	if err != nil {
+	if git, err := setupTest(t, origin, testrepo); err != nil {
 		t.Error(err)
 	}
-	shouldRun, err := git.Poll()
-	if err != nil {
+	if shouldRun, err := git.Poll(); err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
 	if shouldRun == true {

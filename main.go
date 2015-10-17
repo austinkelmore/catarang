@@ -33,6 +33,8 @@ func deleteJob(w http.ResponseWriter, r *http.Request) {
 
 func pollJobs() {
 	for {
+		// todo: akelmore - figure out if this is safe to poll like this if
+		// we're inserting/deleting from it or if there needs to be a lock of some sort
 		for index := range config.Jobs {
 			if config.Jobs[index].NeedsRunning() {
 				config.Jobs[index].Run()

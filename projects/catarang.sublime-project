@@ -8,6 +8,10 @@
 		{
 			"path": "/usr/local/go/src",
 			"name": "go src"
+		},
+		{
+			"path": "C:/Go/src",
+			"name": "go src"
 		}
 	]
 }
