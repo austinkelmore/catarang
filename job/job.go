@@ -7,6 +7,8 @@ import (
 	"github.com/austinkelmore/catarang/scm"
 )
 
+// Config is the where a job keeps all of the necessary
+// information for running an instance of itself
 type Config struct {
 	LocalPath       string
 	BuildConfigPath string
@@ -14,6 +16,8 @@ type Config struct {
 	SourceControl *scm.Git
 }
 
+// Job is the way in which you can run commands on the server or nodes
+// it's the main reason this whole build system is created - to run jobs
 type Job struct {
 	Name           string
 	Enabled        bool
@@ -22,6 +26,7 @@ type Job struct {
 	History        []Instance
 }
 
+// NewJob creates a new job and initializes it with necessary values
 func NewJob(name string, origin string, configPath string) Job {
 	job := Job{Name: name, Enabled: true, CompletedSetup: false}
 

@@ -1,15 +1,14 @@
 package job
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/austinkelmore/catarang/multilog"
 )
 
 // Status The job instance's status
@@ -32,18 +31,13 @@ type Instance struct {
 	// todo: akelmore - make the build command more robust than a string
 	BuildCommand BuildCommand
 	Status       Status
-	Out          io.Writer
-	Err          io.Writer
+	Log          []multilog.Log
 }
 
 // NewInstance Creates a new instance of a job (and copies off the current config)
 // and starts the instance running
 func NewInstance(config Config) Instance {
 	inst := Instance{StartTime: time.Now(), Status: RUNNING, Config: config}
-	var bOut bytes.Buffer
-	inst.Out = io.MultiWriter(&bOut, os.Stdout)
-	var bErr bytes.Buffer
-	inst.Err = io.MultiWriter(&bErr, os.Stderr)
 	return inst
 }
 
