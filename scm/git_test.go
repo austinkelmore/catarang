@@ -1,15 +1,15 @@
 package scm_test
 
 import (
-	"bufio"
-	"bytes"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/austinkelmore/catarang/multilog"
 	"github.com/austinkelmore/catarang/scm"
 )
 
@@ -42,7 +42,7 @@ func forceRemoveAll(path string) error {
 	return nil
 }
 
-func createTestRepo(t *testing.T, origin string, clone string) error {
+func createTestRepo(t *testing.T, origin string) error {
 	// clear out the origin if it exists and start from scratch
 	err := forceRemoveAll(origin)
 	if err != nil {
@@ -90,28 +90,41 @@ func createTestRepo(t *testing.T, origin string, clone string) error {
 		return err
 	}
 
-	// start the clone from scratch as well
-	err = forceRemoveAll(clone)
-	if err != nil {
-		t.Logf("Error removing files. %s\n", err.Error())
-		return err
-	}
-
 	return nil
 }
 
 func setupTest(t *testing.T, origin string, clone string) (*scm.Git, error) {
-	err := createTestRepo(t, origin, clone)
+	err := createTestRepo(t, origin)
 	if err != nil {
 		t.Error(err)
 		return nil, err
 	}
 
+	// start the clone from scratch as well
+	err = forceRemoveAll(clone)
+	if err != nil {
+		t.Errorf("Error removing files. %s\n", err.Error())
+		return nil, err
+	}
+
 	git := scm.NewGit(origin, clone)
-	b := new(bytes.Buffer)
-	rw := bufio.NewWriter(b)
-	err = git.FirstTimeSetup(rw, rw)
+	logger := multilog.New("test")
+	err = git.FirstTimeSetup(&logger)
 	return git, err
+}
+
+func syncBackOneRev(t *testing.T, testrepo string) {
+	// sync the git repository back one step so we can test polling when we need to sync
+	out, err := exec.Command("git", "-C", testrepo, "log", "--oneline").CombinedOutput()
+	if err != nil {
+		t.Error(err)
+	}
+	lines := strings.Split(string(out[:]), "\n")
+	fields := strings.Fields(lines[1])
+	out, err = exec.Command("git", "-C", testrepo, "reset", "--hard", fields[0]).CombinedOutput()
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestGitExists(t *testing.T) {
@@ -121,56 +134,81 @@ func TestGitExists(t *testing.T) {
 	}
 }
 
-func TestFirstTimeSetup(t *testing.T) {
-	_, err := setupTest(t, "../tests/FirstTimeSetupOrigin/", "../tests/FirstTimeSetup")
-	if err != nil {
-		t.Error(err.Error())
-	}
-}
-
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.NewGit("bogus_repo_path", "../tests/FirstTimeSetupFail")
+	git := scm.NewGit("bogus_repo_path/", "../tests/FirstTimeSetupFail/")
 
-	b := new(bytes.Buffer)
-	w := bufio.NewWriter(b)
-	err := git.FirstTimeSetup(w, w)
+	logger := multilog.New("test")
+	err := git.FirstTimeSetup(&logger)
 	if err == nil {
 		t.Error("Expected failure for bogus repo path. No error returned.")
 	}
 }
 
-func TestPoll(t *testing.T) {
+// todo: akelmore - refactor
+func TestSetupPollAndSync(t *testing.T) {
 	origin := "../tests/PollOrigin/"
 	testrepo := "../tests/Poll/"
-	if git, err := setupTest(t, origin, testrepo); err != nil {
+	git, err := setupTest(t, origin, testrepo)
+	if err != nil {
 		t.Error(err)
+		return
 	}
-	if shouldRun, err := git.Poll(); err != nil {
+	logger := multilog.New("test")
+	shouldRun, err := git.Poll(&logger)
+	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
 	if shouldRun == true {
 		t.Error("Expected to not have to run. Should be fully synced.")
 	}
 
-	// sync the git repository back one step so we can test polling when we need to sync
-	out, err := exec.Command("git", "-C", testrepo, "log", "--oneline").CombinedOutput()
-	if err != nil {
-		t.Logf("Couldn't call git log on the test repo.\n%s\n", out)
-		t.Error(err)
-	}
-	lines := strings.Split(string(out[:]), "\n")
-	fields := strings.Fields(lines[1])
-	out, err = exec.Command("git", "-C", testrepo, "reset", "--hard", fields[0]).CombinedOutput()
-	if err != nil {
-		t.Logf("Couldn't reset back to older changelist in git.\n%s\n", out)
-		t.Error(err)
-	}
+	syncBackOneRev(t, testrepo)
 
-	shouldRun, err = git.Poll()
+	shouldRun, err = git.Poll(&logger)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
 	if shouldRun == false {
 		t.Error("Expected to have to run. Should NOT be fully synced.")
+	}
+
+	if err = git.UpdateExisting(&logger); err != nil {
+		t.Errorf("Should have been able to update git repo.\n%s\n", err.Error())
+	}
+	if err = git.UpdateExisting(&logger); err == nil {
+		t.Error("Should not have been able to update git repo.")
+	}
+	git.LocalRepo = "bogus_repo_path"
+	logger.Out.Reset()
+	logger.Err.Reset()
+
+	// Poll does two commands on the local repo, i know how to test
+	// the first one, but figure out how to test the failure of the second
+	// one (how does rev-parse fail)
+
+	if err = git.UpdateExisting(&logger); err == nil {
+		t.Error("Should not be able to update bogus local repo.")
+	}
+	log.Printf("Out: %s", logger.Out.Bytes())
+	log.Printf("Err: %s", logger.Err.Bytes())
+
+	if _, err = git.Poll(&logger); err == nil {
+		t.Error("Should not be able to poll bogus local repo.")
+	}
+	git.Origin = "bogus_repo_path"
+	if _, err = git.Poll(&logger); err == nil {
+		t.Error("Should not be able to poll bogus origin repo.")
+	}
+}
+
+func TestLocalRepoPath(t *testing.T) {
+	git, err := setupTest(t, "../tests/LocalRepoPathOrigin/", "../tests/LocalRepoPath/")
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	if git.LocalRepo != git.LocalRepoPath() {
+		t.Error("LocalRepo isn't the same as LocalRepoPath()")
 	}
 }

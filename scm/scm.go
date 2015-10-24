@@ -1,11 +1,11 @@
 package scm
 
-import "io"
+import "github.com/austinkelmore/catarang/multilog"
 
 // SCMer interface for the source control modules
 type SCMer interface {
-	FirstTimeSetup(outWriter io.Writer, errWriter io.Writer) error
-	Poll() (bool, error)
-	UpdateExisting(outWriter *io.Writer, errWriter *io.Writer) error
+	FirstTimeSetup(logger *multilog.Log) error
+	Poll(logger *multilog.Log) (bool, error)
+	UpdateExisting(logger *multilog.Log) error
 	LocalRepoPath() string
 }

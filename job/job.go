@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/austinkelmore/catarang/multilog"
 	"github.com/austinkelmore/catarang/scm"
 )
 
@@ -56,28 +57,7 @@ func (j *Job) Run() {
 	j.History = append(j.History, NewInstance(j.CurConfig))
 	inst := &j.History[len(j.History)-1]
 
-	if !j.CompletedSetup {
-		log.Println("Running first time setup for:", j.Name)
-		if err := inst.Config.SourceControl.FirstTimeSetup(inst.Out, inst.Err); err != nil {
-			log.Println("Error in first time setup: " + err.Error())
-			inst.Status = FAILED
-		} else {
-			j.CompletedSetup = true
-		}
-	} else {
-		if err := inst.Config.SourceControl.UpdateExisting(&inst.Out, &inst.Err); err != nil {
-			log.Println("Error updating an existing depot: " + err.Error())
-			inst.Status = FAILED
-		}
-	}
-
-	if inst.Status != FAILED {
-		if err := inst.Start(); err != nil {
-			log.Println("Error running exec command: " + err.Error())
-			inst.Status = FAILED
-		}
-	}
-
+	inst.Start(&j.CompletedSetup)
 	inst.EndTime = time.Now()
 }
 
@@ -90,7 +70,8 @@ func (j *Job) needsUpdate() bool {
 	log.Println("Running needsUpdate for:", j.Name)
 
 	// todo: akelmore - make these use a real log
-	shouldRun, err := j.CurConfig.SourceControl.Poll()
+	logger := multilog.New("poll")
+	shouldRun, err := j.CurConfig.SourceControl.Poll(&logger)
 	if err != nil {
 		log.Println(err.Error())
 	}

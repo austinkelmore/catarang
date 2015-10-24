@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"log"
-	"os"
 	"os/exec"
+
+	"github.com/austinkelmore/catarang/multilog"
 )
 
 // NewGit Creates the git handler
@@ -30,52 +30,48 @@ type Git struct {
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
-func (g Git) FirstTimeSetup(outWriter io.Writer, errWriter io.Writer) error {
+func (g Git) FirstTimeSetup(logger *multilog.Log) error {
 	// order to do things:
 	// 1. Clone git repo
 	// 2. Read in config to see if we need anything else
 	// 3. Run
 
 	cmd := exec.Command("git", "clone", g.Origin, g.LocalRepo)
-	cmd.Stdout = outWriter
-	cmd.Stderr = errWriter
+	cmd.Stdout = &logger.Out
+	cmd.Stderr = &logger.Err
 	if err := cmd.Run(); err != nil {
-		log.Println("Error doing first time setup for: " + g.Origin)
-		return err
+		return errors.New("Error doing first time setup for: " + g.Origin)
 	}
 
 	// set up the authentication for the repo
 	// todo: akelmore - do i need this authentication here, or should it be placed elsewhere for git?
-	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.email", g.Auth.Email)
-	cmd.Stdout = outWriter
-	cmd.Stderr = errWriter
-	if err := cmd.Run(); err != nil {
-		log.Println("Error trying to set git email for: " + g.Auth.Email)
-		return err
-	}
+	// cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.email", g.Auth.Email)
+	// cmd.Stdout = &logger.Out
+	// cmd.Stderr = &logger.Err
+	// if err := cmd.Run(); err != nil {
+	// 	return errors.New("Error trying to set git email for: " + g.Auth.Email)
+	// }
 
-	cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.name", g.Auth.Username)
-	cmd.Stdout = outWriter
-	cmd.Stderr = errWriter
-	if err := cmd.Run(); err != nil {
-		log.Println("Error trying to set git username for: " + g.Auth.Username)
-		return err
-	}
+	// cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.name", g.Auth.Username)
+	// cmd.Stdout = &logger.Out
+	// cmd.Stderr = &logger.Err
+	// if err := cmd.Run(); err != nil {
+	// 	return errors.New("Error trying to set git username for: " + g.Auth.Username)
+	// }
 
 	return nil
 }
 
 // Poll polls the git master to see if the local repository is different from the master's head
-func (g *Git) Poll() (bool, error) {
+func (g *Git) Poll(logger *multilog.Log) (bool, error) {
 	var b bytes.Buffer
-	multi := io.MultiWriter(&b, os.Stdout)
+	multi := io.MultiWriter(&b, &logger.Out)
 
 	cmd := exec.Command("git", "-C", g.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
 	cmd.Stdout = multi
-	cmd.Stderr = multi
+	cmd.Stderr = &logger.Err
 	if err := cmd.Run(); err != nil {
-		log.Println("Error polling head of git repo: " + err.Error())
-		return false, err
+		return false, errors.New("Error polling head of origin repo: " + err.Error())
 	}
 
 	remoteHead := string(bytes.Fields(b.Bytes())[0])
@@ -83,10 +79,9 @@ func (g *Git) Poll() (bool, error) {
 	b.Reset()
 	cmd = exec.Command("git", "-C", g.LocalRepo, "rev-parse", "HEAD")
 	cmd.Stdout = multi
-	cmd.Stderr = multi
+	cmd.Stderr = &logger.Err
 	if err := cmd.Run(); err != nil {
-		log.Println("Error finding head of local repo: " + err.Error())
-		return false, err
+		return false, errors.New("Error finding head of local repo: " + err.Error())
 	}
 
 	localHead := string(bytes.Fields(b.Bytes())[0])
@@ -95,19 +90,16 @@ func (g *Git) Poll() (bool, error) {
 }
 
 // UpdateExisting syncs the git repository
-func (g *Git) UpdateExisting(outWriter *io.Writer, errWriter *io.Writer) error {
-	var b bytes.Buffer
-	multi := io.MultiWriter(&b, *outWriter)
-
-	// update the git repo
+func (g *Git) UpdateExisting(logger *multilog.Log) error {
+	// todo: akelmore - do i want to trust that multilog is empty, or should i assume it's not?
+	// todo: akelmore - check every place where multilogger is used
 	cmd := exec.Command("git", "-C", g.LocalRepo, "pull")
-	cmd.Stdout = multi
-	cmd.Stderr = *errWriter
+	cmd.Stdout = &logger.Out
+	cmd.Stderr = &logger.Err
 	if err := cmd.Run(); err != nil {
-		log.Println("Error pulling git")
-		return err
-	} else if bytes.Contains(b.Bytes(), []byte("Already up-to-date.")) {
-		return errors.New("Something went wrong with the git pull, it was already up to date. It shouldn't have been.")
+		return errors.New("Error pulling git.")
+	} else if bytes.Contains(logger.Out.Bytes(), []byte("Already up-to-date.")) {
+		return errors.New("Something went wrong with git pull, it was already up to date. It shouldn't have been.")
 	}
 
 	return nil

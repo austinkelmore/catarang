@@ -10,8 +10,7 @@ type Log struct {
 }
 
 // New creates a new MultiLog
-func New(name string) *Log {
-	log := new(Log)
-	log.Name = name
+func New(name string) Log {
+	log := Log{Name: name}
 	return log
 }
