@@ -42,7 +42,7 @@ func forceRemoveAll(path string) error {
 	return nil
 }
 
-func createTestRepo(t *testing.T, origin string) error {
+func initRepo(t *testing.T, origin string) error {
 	// clear out the origin if it exists and start from scratch
 	err := forceRemoveAll(origin)
 	if err != nil {
@@ -55,6 +55,15 @@ func createTestRepo(t *testing.T, origin string) error {
 		return err
 	}
 
+	return nil
+}
+
+func createTestRepo(t *testing.T, origin string) error {
+	err := initRepo(t, origin)
+	if err != nil {
+		return err
+	}
+
 	filename := "file.txt"
 	// write, add, and commit file initially
 	err = ioutil.WriteFile(origin+filename, []byte("Test file for git tests."), 0644)
@@ -62,7 +71,7 @@ func createTestRepo(t *testing.T, origin string) error {
 		t.Log("Couldn't write test file in test repo.")
 		return err
 	}
-	out, err = exec.Command("git", "-C", origin, "add", filename).CombinedOutput()
+	out, err := exec.Command("git", "-C", origin, "add", filename).CombinedOutput()
 	if err != nil {
 		t.Logf("Couldn't add test file to git.\n%s\n", out)
 		return err
@@ -93,15 +102,9 @@ func createTestRepo(t *testing.T, origin string) error {
 	return nil
 }
 
-func setupTest(t *testing.T, origin string, clone string) (*scm.Git, error) {
-	err := createTestRepo(t, origin)
-	if err != nil {
-		t.Error(err)
-		return nil, err
-	}
-
+func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) {
 	// start the clone from scratch as well
-	err = forceRemoveAll(clone)
+	err := forceRemoveAll(clone)
 	if err != nil {
 		t.Errorf("Error removing files. %s\n", err.Error())
 		return nil, err
@@ -111,6 +114,16 @@ func setupTest(t *testing.T, origin string, clone string) (*scm.Git, error) {
 	logger := multilog.New("test")
 	err = git.FirstTimeSetup(&logger)
 	return git, err
+}
+
+func setupBothRepos(t *testing.T, origin string, clone string) (*scm.Git, error) {
+	err := createTestRepo(t, origin)
+	if err != nil {
+		t.Error(err)
+		return nil, err
+	}
+
+	return setupGitClone(t, origin, clone)
 }
 
 func syncBackOneRev(t *testing.T, testrepo string) {
@@ -148,7 +161,7 @@ func TestFirstTimeSetupFail(t *testing.T) {
 func TestSetupPollAndSync(t *testing.T) {
 	origin := "../tests/PollOrigin/"
 	testrepo := "../tests/Poll/"
-	git, err := setupTest(t, origin, testrepo)
+	git, err := setupBothRepos(t, origin, testrepo)
 	if err != nil {
 		t.Error(err)
 		return
@@ -202,7 +215,7 @@ func TestSetupPollAndSync(t *testing.T) {
 }
 
 func TestLocalRepoPath(t *testing.T) {
-	git, err := setupTest(t, "../tests/LocalRepoPathOrigin/", "../tests/LocalRepoPath/")
+	git, err := setupBothRepos(t, "../tests/LocalRepoPathOrigin/", "../tests/LocalRepoPath/")
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -210,5 +223,25 @@ func TestLocalRepoPath(t *testing.T) {
 
 	if git.LocalRepo != git.LocalRepoPath() {
 		t.Error("LocalRepo isn't the same as LocalRepoPath()")
+	}
+}
+
+func TestPollEmpty(t *testing.T) {
+	origin := "../tests/PollEmptyOrigin"
+	clone := "../tests/PollEmpty"
+	initRepo(t, origin)
+	git, err := setupGitClone(t, origin, clone)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+
+	logger := multilog.New("test")
+	shouldRun, err := git.Poll(&logger)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if shouldRun {
+		t.Error("Should not want to run on an empty git repository after polling.")
 	}
 }

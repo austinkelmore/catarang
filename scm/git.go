@@ -66,7 +66,6 @@ func (g Git) FirstTimeSetup(logger *multilog.Log) error {
 func (g *Git) Poll(logger *multilog.Log) (bool, error) {
 	var b bytes.Buffer
 	multi := io.MultiWriter(&b, &logger.Out)
-
 	cmd := exec.Command("git", "-C", g.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
 	cmd.Stdout = multi
 	cmd.Stderr = &logger.Err
@@ -74,18 +73,22 @@ func (g *Git) Poll(logger *multilog.Log) (bool, error) {
 		return false, errors.New("Error polling head of origin repo: " + err.Error())
 	}
 
-	remoteHead := string(bytes.Fields(b.Bytes())[0])
-
-	b.Reset()
+	var b2 bytes.Buffer
+	multi2 := io.MultiWriter(&b2, &logger.Out)
 	cmd = exec.Command("git", "-C", g.LocalRepo, "rev-parse", "HEAD")
-	cmd.Stdout = multi
+	cmd.Stdout = multi2
 	cmd.Stderr = &logger.Err
 	if err := cmd.Run(); err != nil {
 		return false, errors.New("Error finding head of local repo: " + err.Error())
 	}
 
-	localHead := string(bytes.Fields(b.Bytes())[0])
+	// empty repositories don't return any text since they have no HEAD
+	if len(b.Bytes()) == 0 || len(b2.Bytes()) == 0 {
+		return false, nil
+	}
 
+	remoteHead := string(bytes.Fields(b.Bytes())[0])
+	localHead := string(bytes.Fields(b.Bytes())[0])
 	return remoteHead != localHead, nil
 }
 
