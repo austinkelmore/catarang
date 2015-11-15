@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 	"time"
 
@@ -93,7 +94,13 @@ func main() {
 
 	go pollJobs()
 
+	str, _ := os.Getwd()
+	log.Println("Current working dir: " + str)
+
+	log.Println("Web dir: " + http.Dir("./web/static/"))
+
 	http.HandleFunc("/", renderWebpage)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 	http.HandleFunc("/addjob", addJob)
 	http.HandleFunc("/deletejob", deleteJob)
 	log.Fatal(http.ListenAndServe(":8080", nil))
