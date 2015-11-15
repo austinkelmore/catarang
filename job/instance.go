@@ -2,6 +2,7 @@ package job
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"os/exec"
@@ -57,21 +58,25 @@ func (i *Instance) fail(reason string) {
 // todo: akelmore - do i still need to update the build command before starting every time? should i only do it sometimes or not at all?
 func (i *Instance) updateBuildCommand() error {
 	// read in the config file's build command
-	file, err := ioutil.ReadFile(i.Config.SourceControl.LocalRepoPath() + i.Config.BuildConfigPath)
+	path := i.Config.BuildConfigPath
+	if path == "" {
+		path = ".catarang.json"
+	}
+
+	file, err := ioutil.ReadFile(i.Config.SourceControl.LocalRepoPath() + path)
 	if err != nil {
-		log.Println("Error reading build config file: " + i.Config.BuildConfigPath)
-		return err
+		return errors.New("Error reading build config file: " + path)
 	}
 	err = json.Unmarshal(file, &i.BuildCommand)
 	if err != nil {
-		log.Println("Error reading JSON from build config file: " + i.Config.BuildConfigPath)
-		return err
+		return errors.New("Error reading JSON from build config file: " + path)
 	}
 
 	return nil
 }
 
 // Start Entry point for the instance
+// todo: akelmore - i don't like passing a bool for the completedSetup, figure something better out
 func (i *Instance) Start(completedSetup *bool) {
 	// todo: akelmore - make jobs have an array of "things" to do rather than hard code scm stuff first
 	// todo: akelmore - pull out the notion of a first time setup and let modules have their own internal states on a per-job basis
@@ -92,7 +97,7 @@ func (i *Instance) Start(completedSetup *bool) {
 
 	logger := i.appendLog("cmd")
 	if err := i.updateBuildCommand(); err != nil {
-		log.Println("Error updating build command from config file.")
+		i.fail("Error updating build command from config file.")
 		return
 	}
 
