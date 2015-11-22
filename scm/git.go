@@ -88,7 +88,7 @@ func (g *Git) Poll(logger *multilog.Log) (bool, error) {
 	}
 
 	remoteHead := string(bytes.Fields(b.Bytes())[0])
-	localHead := string(bytes.Fields(b.Bytes())[0])
+	localHead := string(bytes.Fields(b2.Bytes())[0])
 	return remoteHead != localHead, nil
 }
 

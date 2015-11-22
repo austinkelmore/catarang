@@ -2,7 +2,6 @@ package scm_test
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -195,6 +194,7 @@ func TestSetupPollAndSync(t *testing.T) {
 	logger.Out.Reset()
 	logger.Err.Reset()
 
+	// todo: akelmore - fix polling tests
 	// Poll does two commands on the local repo, i know how to test
 	// the first one, but figure out how to test the failure of the second
 	// one (how does rev-parse fail)
@@ -202,8 +202,6 @@ func TestSetupPollAndSync(t *testing.T) {
 	if err = git.UpdateExisting(&logger); err == nil {
 		t.Error("Should not be able to update bogus local repo.")
 	}
-	log.Printf("Out: %s", logger.Out.Bytes())
-	log.Printf("Err: %s", logger.Err.Bytes())
 
 	if _, err = git.Poll(&logger); err == nil {
 		t.Error("Should not be able to poll bogus local repo.")
@@ -236,10 +234,11 @@ func TestPollEmpty(t *testing.T) {
 		return
 	}
 
+	// todo: akelmore - do we want to be able to poll an empty repository?
 	logger := multilog.New("test")
 	shouldRun, err := git.Poll(&logger)
-	if err != nil {
-		t.Error(err.Error())
+	if err == nil {
+		t.Error("Should not be able to poll an empty repository.")
 	}
 	if shouldRun {
 		t.Error("Should not want to run on an empty git repository after polling.")
