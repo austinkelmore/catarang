@@ -6,15 +6,18 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/austinkelmore/catarang/job"
+	"golang.org/x/net/websocket"
 )
 
 // Config All of the run time data for the Catarang server
 type Config struct {
-	Jobs []job.Job
+	Jobs  []job.Job
+	Conns []*websocket.Conn
 }
 
 var config Config
@@ -87,6 +90,44 @@ func saveConfig() {
 	}
 }
 
+func handleConsoleText(ws *websocket.Conn) {
+	config.Conns = append(config.Conns, ws)
+	type inOut struct {
+		err int
+		out int
+	}
+	var sent []inOut
+
+	for {
+		if len(config.Jobs) > 0 && len(config.Jobs[0].History) > 0 {
+			for index := range config.Jobs[0].History[0].Log {
+				if index >= len(sent) {
+					log.Printf("Index = %v\n", index)
+					if index > len(sent)-1 {
+						sent = append(sent, inOut{err: 0, out: 0})
+					}
+
+					logger := &config.Jobs[0].History[0].Log[index]
+					splitErr := strings.Split(string(logger.Err.Bytes()), "\n")
+					for i := sent[index].err; i < len(splitErr); i++ {
+						log.Printf("Err - Index: %v, Num: %v, Val: %v", index, i, splitErr[i])
+						websocket.Message.Send(ws, splitErr[i])
+					}
+					splitOut := strings.Split(string(logger.Out.Bytes()), "\n")
+					for i := sent[index].out; i < len(splitOut); i++ {
+						log.Printf("Out - Index: %v, Num: %v, Val: %v", index, i, splitOut[i])
+						websocket.Message.Send(ws, splitOut[i])
+					}
+
+					sent[index].err = len(splitErr)
+					sent[index].out = len(splitOut)
+				}
+			}
+		}
+		time.Sleep(time.Second * 2)
+	}
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("Running Catarang!")
@@ -103,5 +144,8 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 	http.HandleFunc("/addjob", addJob)
 	http.HandleFunc("/deletejob", deleteJob)
+
+	http.Handle("/ws", websocket.Handler(handleConsoleText))
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
