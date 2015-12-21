@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"text/template"
 	"time"
@@ -110,13 +109,16 @@ func handleConsoleText(ws *websocket.Conn) {
 					logger := &config.Jobs[0].History[0].Log[index]
 					splitErr := strings.Split(string(logger.Err.Bytes()), "\n")
 					for i := sent[index].err; i < len(splitErr); i++ {
-						log.Printf("Err - Index: %v, Num: %v, Val: %v", index, i, splitErr[i])
-						websocket.Message.Send(ws, splitErr[i])
+						if err := websocket.Message.Send(ws, splitErr[i]); err != nil {
+							log.Printf("Error sending websocket: %s\n", err.Error())
+						}
+
 					}
 					splitOut := strings.Split(string(logger.Out.Bytes()), "\n")
 					for i := sent[index].out; i < len(splitOut); i++ {
-						log.Printf("Out - Index: %v, Num: %v, Val: %v", index, i, splitOut[i])
-						websocket.Message.Send(ws, splitOut[i])
+						if err := websocket.Message.Send(ws, splitOut[i]); err != nil {
+							log.Printf("Error sending websocket: %s\n", err.Error())
+						}
 					}
 
 					sent[index].err = len(splitErr)
@@ -134,11 +136,6 @@ func main() {
 	readInConfig()
 
 	go pollJobs()
-
-	str, _ := os.Getwd()
-	log.Println("Current working dir: " + str)
-
-	log.Println("Web dir: " + http.Dir("./web/static/"))
 
 	http.HandleFunc("/", renderWebpage)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
