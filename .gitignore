@@ -1,3 +1,6 @@
 jobs/
 projects/*.sublime-workspace
 tests/
+catarang_config.json
+main.exe
+main
