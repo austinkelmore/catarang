@@ -3,7 +3,7 @@ package multilog_test
 import (
 	"testing"
 
-	"multilog"
+	"github.com/austinkelmore/catarang/multilog"
 )
 
 func TestNew(t *testing.T) {

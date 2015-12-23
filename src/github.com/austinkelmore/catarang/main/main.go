@@ -9,7 +9,7 @@ import (
 	"text/template"
 	"time"
 
-	"job"
+	"github.com/austinkelmore/catarang/job"
 
 	"github.com/golang/net/websocket"
 )

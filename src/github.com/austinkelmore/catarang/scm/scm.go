@@ -1,6 +1,6 @@
 package scm
 
-import "multilog"
+import "github.com/austinkelmore/catarang/multilog"
 
 // SCMer interface for the source control modules
 type SCMer interface {

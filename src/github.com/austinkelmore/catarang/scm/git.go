@@ -6,7 +6,7 @@ import (
 	"io"
 	"os/exec"
 
-	"multilog"
+	"github.com/austinkelmore/catarang/multilog"
 )
 
 // NewGit Creates the git handler

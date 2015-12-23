@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"multilog"
-	"scm"
+	"github.com/austinkelmore/catarang/multilog"
+	"github.com/austinkelmore/catarang/scm"
 )
 
 // Config is the where a job keeps all of the necessary

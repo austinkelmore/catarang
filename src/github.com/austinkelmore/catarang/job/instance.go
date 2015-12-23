@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"multilog"
+	"github.com/austinkelmore/catarang/multilog"
 )
 
 // Status The job instance's status
