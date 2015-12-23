@@ -9,8 +9,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/austinkelmore/catarang/job"
-	"golang.org/x/net/websocket"
+	"job"
+
+	"github.com/golang/net/websocket"
 )
 
 // Config All of the run time data for the Catarang server
@@ -32,6 +33,10 @@ func addJob(w http.ResponseWriter, r *http.Request) {
 
 func deleteJob(w http.ResponseWriter, r *http.Request) {
 	renderWebpage(w, r)
+}
+
+func startJob(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func pollJobs() {
@@ -141,6 +146,7 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 	http.HandleFunc("/addjob", addJob)
 	http.HandleFunc("/deletejob", deleteJob)
+	http.HandleFunc("/startjob", startJob)
 
 	http.Handle("/ws", websocket.Handler(handleConsoleText))
 

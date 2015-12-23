@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/austinkelmore/catarang/multilog"
-	"github.com/austinkelmore/catarang/scm"
+	"multilog"
+	"scm"
 )
 
 // this function has to exist because Go's os.RemoveAll doesn't remove locked files
