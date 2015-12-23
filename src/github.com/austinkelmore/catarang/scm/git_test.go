@@ -12,6 +12,19 @@ import (
 	"github.com/austinkelmore/catarang/scm"
 )
 
+// TestMain is the entry point for this file's tests
+func TestMain(m *testing.M) {
+	ret := m.Run()
+	cleanUpTests()
+	os.Exit(ret)
+}
+
+var localPath = "../tests/"
+
+func cleanUpTests() {
+	forceRemoveAll(localPath)
+}
+
 // this function has to exist because Go's os.RemoveAll doesn't remove locked files
 // on Windows, which git has for some reason
 func forceRemoveAll(path string) error {
@@ -147,7 +160,7 @@ func TestGitExists(t *testing.T) {
 }
 
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.NewGit("bogus_repo_path/", "../tests/FirstTimeSetupFail/")
+	git := scm.NewGit("bogus_repo_path/", localPath+"FirstTimeSetupFail/")
 
 	logger := multilog.New("test")
 	err := git.FirstTimeSetup(&logger)
@@ -158,8 +171,8 @@ func TestFirstTimeSetupFail(t *testing.T) {
 
 // todo: akelmore - refactor
 func TestSetupPollAndSync(t *testing.T) {
-	origin := "../tests/PollOrigin/"
-	testrepo := "../tests/Poll/"
+	origin := localPath + "PollOrigin/"
+	testrepo := localPath + "Poll/"
 	git, err := setupBothRepos(t, origin, testrepo)
 	if err != nil {
 		t.Error(err)
@@ -213,7 +226,7 @@ func TestSetupPollAndSync(t *testing.T) {
 }
 
 func TestLocalRepoPath(t *testing.T) {
-	git, err := setupBothRepos(t, "../tests/LocalRepoPathOrigin/", "../tests/LocalRepoPath/")
+	git, err := setupBothRepos(t, localPath+"LocalRepoPathOrigin/", localPath+"LocalRepoPath/")
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -225,8 +238,8 @@ func TestLocalRepoPath(t *testing.T) {
 }
 
 func TestPollEmpty(t *testing.T) {
-	origin := "../tests/PollEmptyOrigin"
-	clone := "../tests/PollEmpty"
+	origin := localPath + "PollEmptyOrigin"
+	clone := localPath + "PollEmpty"
 	initRepo(t, origin)
 	git, err := setupGitClone(t, origin, clone)
 	if err != nil {
