@@ -2,5 +2,4 @@ bin/
 pkg/
 jobs/
 projects/*.sublime-workspace
-tests/
 catarang_config.json
