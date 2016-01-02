@@ -11,6 +11,7 @@ import (
 
 	"github.com/austinkelmore/catarang/job"
 
+	"github.com/gorilla/mux"
 	"golang.org/x/net/websocket"
 )
 
@@ -36,7 +37,15 @@ func deleteJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func startJob(w http.ResponseWriter, r *http.Request) {
-
+	vars := mux.Vars(r)
+	jobName := vars["name"]
+	for index := range config.Jobs {
+		if config.Jobs[index].Name == jobName {
+			config.Jobs[index].Run()
+			saveConfig()
+			break
+		}
+	}
 }
 
 func pollJobs() {
@@ -106,7 +115,6 @@ func handleConsoleText(ws *websocket.Conn) {
 		if len(config.Jobs) > 0 && len(config.Jobs[0].History) > 0 {
 			for index := range config.Jobs[0].History[0].Log {
 				if index >= len(sent) {
-					log.Printf("Index = %v\n", index)
 					if index > len(sent)-1 {
 						sent = append(sent, inOut{err: 0, out: 0})
 					}
@@ -140,15 +148,17 @@ func main() {
 	log.Println("Running Catarang!")
 	readInConfig()
 
-	go pollJobs()
+	r := mux.NewRouter()
 
-	http.HandleFunc("/", renderWebpage)
+	r.HandleFunc("/", renderWebpage)
+	r.HandleFunc("/deletejob", deleteJob)
+	r.HandleFunc("/addjob", addJob)
+	r.HandleFunc("/job/{name}/start", startJob)
+
+	r.Handle("/ws", websocket.Handler(handleConsoleText))
+
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
-	http.HandleFunc("/addjob", addJob)
-	http.HandleFunc("/deletejob", deleteJob)
-	http.HandleFunc("/startjob", startJob)
-
-	http.Handle("/ws", websocket.Handler(handleConsoleText))
+	http.Handle("/", r)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

@@ -59,6 +59,8 @@ func (j *Job) Run() {
 
 	inst.Start(&j.CompletedSetup)
 	inst.EndTime = time.Now()
+
+	log.Println("Job finished:", j.Name)
 }
 
 func (j *Job) needsUpdate() bool {

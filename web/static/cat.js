@@ -23,3 +23,9 @@ window.onload = function() {
 		console.log("Websocket Error: " + e.data);
 	}
 }
+
+function startjob(name) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.open("POST", "/job/"+name+"/start", true);
+	xhttp.send();
+}

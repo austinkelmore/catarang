@@ -18,7 +18,7 @@
 				{{ end }} )
 				<br>
 				Origin Repository: {{ $value.CurConfig.SourceControl.Origin }}</li>
-				<a href=""
+				<button type="button" onclick="startjob('{{$value.Name}}')">Start Job</button>
 			{{ end }}
 		</ul>
 		<br>
