@@ -11,7 +11,7 @@ import (
 
 	"github.com/austinkelmore/catarang/job"
 
-	"github.com/golang/net/websocket"
+	"golang.org/x/net/websocket"
 )
 
 // Config All of the run time data for the Catarang server

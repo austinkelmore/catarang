@@ -12,6 +12,13 @@
 			"repository": "https://github.com/gorilla/mux",
 			"revision": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b",
 			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/net/websocket",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "0cb26f788dd4625d1956c6fd97ffc4c90669d129",
+			"branch": "master",
+			"path": "/websocket"
 		}
 	]
 }
