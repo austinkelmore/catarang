@@ -1,1 +1,3 @@
-This is a Continuous Integration build server. It was originally being built for the Gopher Gala, but is now being expanded into a full fledged CI server.
+This is a Continuous Integration (build) server built by Austin Kelmore to replace Jenkins. It's a personal side project, so it's progress is slow, but constant.
+
+To build, you must install go (https://golang.org/) and gb (https://getgb.io/) and then do "gb build".
