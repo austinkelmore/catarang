@@ -18,48 +18,69 @@ import (
 // Config All of the run time data for the Catarang server
 type Config struct {
 	Jobs  []job.Job
-	Conns []*websocket.Conn
+	conns []*websocket.Conn
 }
 
 var config Config
 var configFileName = "catarang_config.json"
 
-func addJob(w http.ResponseWriter, r *http.Request) {
-	job := job.NewJob(r.FormValue("name"), r.FormValue("repo"), r.FormValue("build_config"))
+func addJob(name string, repo string) {
+	job := job.NewJob(name, repo)
 	config.Jobs = append(config.Jobs, job)
 	saveConfig()
+	d := struct {
+		Name string `json:"name"`
+		Repo string `json:"repo"`
+	}{
+		name,
+		repo,
+	}
+	sendWebsocketEvent("addJob", d)
+	log.Println("Added job: ", name)
+}
 
+func addJobHandler(w http.ResponseWriter, r *http.Request) {
+	go addJob(r.FormValue("name"), r.FormValue("repo"))
 	renderWebpage(w, r)
 }
 
-func deleteJob(w http.ResponseWriter, r *http.Request) {
-	renderWebpage(w, r)
+func deleteJob(jobName string) {
+	for i := range config.Jobs {
+		if config.Jobs[i].Name == jobName {
+			config.Jobs = append(config.Jobs[:i], config.Jobs[i+1:]...)
+			saveConfig()
+			d := struct {
+				Name string `json:"name"`
+			}{
+				jobName,
+			}
+			sendWebsocketEvent("deleteJob", d)
+			log.Println("Deleted job: ", jobName)
+			break
+		}
+	}
 }
 
-func startJob(w http.ResponseWriter, r *http.Request) {
+func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobName := vars["name"]
-	for index := range config.Jobs {
-		if config.Jobs[index].Name == jobName {
-			config.Jobs[index].Run()
+	go deleteJob(jobName)
+}
+
+func startJob(jobName string) {
+	for i := range config.Jobs {
+		if config.Jobs[i].Name == jobName {
+			config.Jobs[i].Run()
 			saveConfig()
 			break
 		}
 	}
 }
 
-func pollJobs() {
-	for {
-		// todo: akelmore - figure out if this is safe to poll like this if
-		// we're inserting/deleting from it or if there needs to be a lock of some sort
-		for index := range config.Jobs {
-			if config.Jobs[index].NeedsRunning() {
-				config.Jobs[index].Run()
-				saveConfig()
-			}
-		}
-		time.Sleep(time.Second * 10)
-	}
+func startJobHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobName := vars["name"]
+	go startJob(jobName)
 }
 
 func renderWebpage(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +124,27 @@ func saveConfig() {
 	}
 }
 
+func sendWebsocketEvent(eventType string, data interface{}) {
+	d := struct {
+		EventType string      `json:"type"`
+		Data      interface{} `json:"data"`
+	}{
+		eventType,
+		data,
+	}
+	// todo: akelmore - handle marshal error case
+	m, _ := json.Marshal(d)
+	log.Printf("websocket message: %s\n", string(m))
+
+	for _, conn := range config.conns {
+		if err := websocket.Message.Send(conn, string(m)); err != nil {
+			log.Printf("Error sending websocket: %s\n", err.Error())
+		}
+	}
+}
+
 func handleConsoleText(ws *websocket.Conn) {
-	config.Conns = append(config.Conns, ws)
+	config.conns = append(config.conns, ws)
 	type inOut struct {
 		err int
 		out int
@@ -122,16 +162,31 @@ func handleConsoleText(ws *websocket.Conn) {
 					logger := &config.Jobs[0].History[0].Log[index]
 					splitErr := strings.Split(string(logger.Err.Bytes()), "\n")
 					for i := sent[index].err; i < len(splitErr); i++ {
-						if err := websocket.Message.Send(ws, splitErr[i]); err != nil {
-							log.Printf("Error sending websocket: %s\n", err.Error())
+						d := struct {
+							EventType string      `json:"type"`
+							Data      interface{} `json:"data"`
+						}{
+							"consoleLog",
+							splitErr[i],
 						}
-
+						websocket.JSON.Send(ws, d)
+						// if err := websocket.Message.Send(ws, splitErr[i]); err != nil {
+						// 	log.Printf("Error sending websocket: %s\n", err.Error())
+						// }
 					}
 					splitOut := strings.Split(string(logger.Out.Bytes()), "\n")
 					for i := sent[index].out; i < len(splitOut); i++ {
-						if err := websocket.Message.Send(ws, splitOut[i]); err != nil {
-							log.Printf("Error sending websocket: %s\n", err.Error())
+						d := struct {
+							EventType string      `json:"type"`
+							Data      interface{} `json:"data"`
+						}{
+							"consoleLog",
+							splitOut[i],
 						}
+						websocket.JSON.Send(ws, d)
+						// if err := websocket.Message.Send(ws, splitOut[i]); err != nil {
+						// 	log.Printf("Error sending websocket: %s\n", err.Error())
+						// }
 					}
 
 					sent[index].err = len(splitErr)
@@ -151,9 +206,10 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", renderWebpage)
-	r.HandleFunc("/deletejob", deleteJob)
-	r.HandleFunc("/addjob", addJob)
-	r.HandleFunc("/job/{name}/start", startJob)
+	r.HandleFunc("/jobs/add", addJobHandler)
+
+	r.HandleFunc("/job/{name}/start", startJobHandler)
+	r.HandleFunc("/job/{name}/delete", deleteJobHandler)
 
 	r.Handle("/ws", websocket.Handler(handleConsoleText))
 

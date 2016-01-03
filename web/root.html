@@ -8,22 +8,21 @@
 		<br><br>
 
 		<strong>Jobs:</strong>
-		<ul>
+		<ul id="jobs">
 			{{ range $key, $value := .Jobs }}
-				<li>{{ $value.Name }} (
-				{{ if $value.Enabled }}
-					Enabled
-				{{ else }}
-					Disabled
-				{{ end }} )
-				<br>
-				Origin Repository: {{ $value.CurConfig.SourceControl.Origin }}</li>
-				<button type="button" onclick="startjob('{{$value.Name}}')">Start Job</button>
+				<li name="$value.Name">
+					{{ $value.Name }}
+					<br>
+					Origin Repository: {{ $value.CurConfig.SourceControl.Origin }}
+					<br>
+					<button type="button" onclick="startJob('{{$value.Name}}');">Start Job</button>
+					<button type="button" onclick="deleteJob('{{$value.Name}}');">Delete Job</button>
+				</li>
 			{{ end }}
 		</ul>
 		<br>
 		<strong>Add a new job:</strong>
-		<form action="/addjob" method="POST">
+		<form action="javascript:void(0);" method="POST" onsubmit="addJob(this);">
 			Name: <input type="text" name="name" required><br>
 			git URL: <input type="text" name="repo" required><br>
 			<input type="submit" value="Add New Job">
@@ -32,7 +31,6 @@
 		<br>
 		<strong>Job console output:</strong>
 		<ol id="console_log">
-
 		</ol>
 	</body>
 </html>
