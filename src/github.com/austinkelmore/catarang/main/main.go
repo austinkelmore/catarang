@@ -132,19 +132,15 @@ func sendWebsocketEvent(eventType string, data interface{}) {
 		eventType,
 		data,
 	}
-	// todo: akelmore - handle marshal error case
-	m, _ := json.Marshal(d)
-	log.Printf("websocket message: %s\n", string(m))
 
 	for _, conn := range config.conns {
-		if err := websocket.Message.Send(conn, string(m)); err != nil {
+		if err := websocket.JSON.Send(conn, d); err != nil {
 			log.Printf("Error sending websocket: %s\n", err.Error())
 		}
 	}
 }
 
-func handleConsoleText(ws *websocket.Conn) {
-	config.conns = append(config.conns, ws)
+func updateConsoleText() {
 	type inOut struct {
 		err int
 		out int
@@ -162,31 +158,11 @@ func handleConsoleText(ws *websocket.Conn) {
 					logger := &config.Jobs[0].History[0].Log[index]
 					splitErr := strings.Split(string(logger.Err.Bytes()), "\n")
 					for i := sent[index].err; i < len(splitErr); i++ {
-						d := struct {
-							EventType string      `json:"type"`
-							Data      interface{} `json:"data"`
-						}{
-							"consoleLog",
-							splitErr[i],
-						}
-						websocket.JSON.Send(ws, d)
-						// if err := websocket.Message.Send(ws, splitErr[i]); err != nil {
-						// 	log.Printf("Error sending websocket: %s\n", err.Error())
-						// }
+						sendWebsocketEvent("consoleLog", splitErr[i])
 					}
 					splitOut := strings.Split(string(logger.Out.Bytes()), "\n")
 					for i := sent[index].out; i < len(splitOut); i++ {
-						d := struct {
-							EventType string      `json:"type"`
-							Data      interface{} `json:"data"`
-						}{
-							"consoleLog",
-							splitOut[i],
-						}
-						websocket.JSON.Send(ws, d)
-						// if err := websocket.Message.Send(ws, splitOut[i]); err != nil {
-						// 	log.Printf("Error sending websocket: %s\n", err.Error())
-						// }
+						sendWebsocketEvent("consoleLog", splitOut[i])
 					}
 
 					sent[index].err = len(splitErr)
@@ -198,10 +174,20 @@ func handleConsoleText(ws *websocket.Conn) {
 	}
 }
 
+func handleWebsocketConn(ws *websocket.Conn) {
+	config.conns = append(config.conns, ws)
+
+	// never exit from this function otherwise the websocket connection closes
+	select {}
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("Running Catarang!")
 	readInConfig()
+
+	// todo: akelmore - instead of polling the console logs, have callbacks to send the data to the client
+	go updateConsoleText()
 
 	r := mux.NewRouter()
 
@@ -211,7 +197,7 @@ func main() {
 	r.HandleFunc("/job/{name}/start", startJobHandler)
 	r.HandleFunc("/job/{name}/delete", deleteJobHandler)
 
-	r.Handle("/ws", websocket.Handler(handleConsoleText))
+	r.Handle("/ws", websocket.Handler(handleWebsocketConn))
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 	http.Handle("/", r)
