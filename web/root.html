@@ -10,7 +10,7 @@
 		<strong>Jobs:</strong>
 		<ul id="jobs">
 			{{ range $key, $value := .Jobs }}
-				<li name="$value.Name">
+				<li id="{{$value.Name}}">
 					{{ $value.Name }}
 					<br>
 					Origin Repository: {{ $value.CurConfig.SourceControl.Origin }}

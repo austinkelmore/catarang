@@ -24,7 +24,14 @@ type Config struct {
 var config Config
 var configFileName = "catarang_config.json"
 
-func addJob(name string, repo string) {
+func addJob(name string, repo string) bool {
+	// names must be unique
+	for _, j := range config.Jobs {
+		if j.Name == name {
+			return false
+		}
+	}
+
 	job := job.NewJob(name, repo)
 	config.Jobs = append(config.Jobs, job)
 	saveConfig()
@@ -37,11 +44,15 @@ func addJob(name string, repo string) {
 	}
 	sendWebsocketEvent("addJob", d)
 	log.Println("Added job: ", name)
+
+	return true
 }
 
 func addJobHandler(w http.ResponseWriter, r *http.Request) {
-	go addJob(r.FormValue("name"), r.FormValue("repo"))
-	renderWebpage(w, r)
+	added := addJob(r.FormValue("name"), r.FormValue("repo"))
+	if !added {
+		http.Error(w, "Name already exists for a job.", http.StatusConflict)
+	}
 }
 
 func deleteJob(jobName string) {
