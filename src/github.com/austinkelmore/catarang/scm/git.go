@@ -31,33 +31,12 @@ type Git struct {
 
 // FirstTimeSetup Clone the git repository and setup the email and username
 func (g Git) FirstTimeSetup(logger *multilog.Log) error {
-	// order to do things:
-	// 1. Clone git repo
-	// 2. Read in config to see if we need anything else
-	// 3. Run
-
 	cmd := exec.Command("git", "clone", g.Origin, g.LocalRepo)
 	cmd.Stdout = &logger.Out
 	cmd.Stderr = &logger.Err
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error doing first time setup for: " + g.Origin)
 	}
-
-	// set up the authentication for the repo
-	// todo: akelmore - do i need this authentication here, or should it be placed elsewhere for git?
-	// cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.email", g.Auth.Email)
-	// cmd.Stdout = &logger.Out
-	// cmd.Stderr = &logger.Err
-	// if err := cmd.Run(); err != nil {
-	// 	return errors.New("Error trying to set git email for: " + g.Auth.Email)
-	// }
-
-	// cmd = exec.Command("git", "-C", g.LocalRepo, "config", "user.name", g.Auth.Username)
-	// cmd.Stdout = &logger.Out
-	// cmd.Stderr = &logger.Err
-	// if err := cmd.Run(); err != nil {
-	// 	return errors.New("Error trying to set git username for: " + g.Auth.Username)
-	// }
 
 	return nil
 }
