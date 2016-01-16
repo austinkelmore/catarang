@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/austinkelmore/catarang/multilog"
 	"github.com/austinkelmore/catarang/scm"
+	"github.com/austinkelmore/catarang/splitlog"
 )
 
 // TestMain is the entry point for this file's tests
@@ -123,8 +123,8 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 	}
 
 	git := scm.NewGit(origin, clone)
-	logger := multilog.New("test")
-	err = git.FirstTimeSetup(&logger)
+	logger := splitlog.JobLog{Name: "test"}
+	err = git.FirstTimeSetup(logger.Cmds)
 	return git, err
 }
 
@@ -162,8 +162,8 @@ func TestGitExists(t *testing.T) {
 func TestFirstTimeSetupFail(t *testing.T) {
 	git := scm.NewGit("bogus_repo_path/", localPath+"FirstTimeSetupFail/")
 
-	logger := multilog.New("test")
-	err := git.FirstTimeSetup(&logger)
+	logger := splitlog.JobLog{Name: "test"}
+	err := git.FirstTimeSetup(logger.Cmds)
 	if err == nil {
 		t.Error("Expected failure for bogus repo path. No error returned.")
 	}
@@ -178,8 +178,8 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	logger := multilog.New("test")
-	shouldRun, err := git.Poll(&logger)
+	logger := splitlog.JobLog{Name: "test"}
+	shouldRun, err := git.Poll(logger.Cmds)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
@@ -189,7 +189,7 @@ func TestSetupPollAndSync(t *testing.T) {
 
 	syncBackOneRev(t, testrepo)
 
-	shouldRun, err = git.Poll(&logger)
+	shouldRun, err = git.Poll(logger.Cmds)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
@@ -197,30 +197,28 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error("Expected to have to run. Should NOT be fully synced.")
 	}
 
-	if err = git.UpdateExisting(&logger); err != nil {
+	if err = git.UpdateExisting(logger.Cmds); err != nil {
 		t.Errorf("Should have been able to update git repo.\n%s\n", err.Error())
 	}
-	if err = git.UpdateExisting(&logger); err == nil {
+	if err = git.UpdateExisting(logger.Cmds); err == nil {
 		t.Error("Should not have been able to update git repo.")
 	}
 	git.LocalRepo = "bogus_repo_path"
-	logger.Out.Reset()
-	logger.Err.Reset()
 
 	// todo: akelmore - fix polling tests
 	// Poll does two commands on the local repo, i know how to test
 	// the first one, but figure out how to test the failure of the second
 	// one (how does rev-parse fail)
 
-	if err = git.UpdateExisting(&logger); err == nil {
+	if err = git.UpdateExisting(logger.Cmds); err == nil {
 		t.Error("Should not be able to update bogus local repo.")
 	}
 
-	if _, err = git.Poll(&logger); err == nil {
+	if _, err = git.Poll(logger.Cmds); err == nil {
 		t.Error("Should not be able to poll bogus local repo.")
 	}
 	git.Origin = "bogus_repo_path"
-	if _, err = git.Poll(&logger); err == nil {
+	if _, err = git.Poll(logger.Cmds); err == nil {
 		t.Error("Should not be able to poll bogus origin repo.")
 	}
 }
@@ -248,8 +246,8 @@ func TestPollEmpty(t *testing.T) {
 	}
 
 	// todo: akelmore - do we want to be able to poll an empty repository?
-	logger := multilog.New("test")
-	shouldRun, err := git.Poll(&logger)
+	logger := splitlog.JobLog{Name: "test"}
+	shouldRun, err := git.Poll(logger.Cmds)
 	if err == nil {
 		t.Error("Should not be able to poll an empty repository.")
 	}

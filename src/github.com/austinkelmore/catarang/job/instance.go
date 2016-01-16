@@ -5,11 +5,10 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
-	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/austinkelmore/catarang/multilog"
+	"github.com/austinkelmore/catarang/splitlog"
 )
 
 // Status The job instance's status
@@ -26,14 +25,12 @@ const (
 
 // Instance a single run of a job
 type Instance struct {
-	StartTime time.Time
-	EndTime   time.Time
-	Config    Config
-	// todo: akelmore - make the build command more robust than a string
+	StartTime    time.Time
+	EndTime      time.Time
+	Config       Config
 	BuildCommand BuildCommand
 	Status       Status
-	// todo: akelmore - move the log from the instance to somewhere else?
-	Log []multilog.Log
+	Log          []splitlog.JobLog
 }
 
 // NewInstance Creates a new instance of a job (and copies off the current config)
@@ -43,15 +40,12 @@ func NewInstance(config Config) Instance {
 	return inst
 }
 
-func (i *Instance) appendLog(name string) *multilog.Log {
-	i.Log = append(i.Log, multilog.New(name))
+func (i *Instance) appendLog(name string) *splitlog.JobLog {
+	i.Log = append(i.Log, splitlog.JobLog{Name: name})
 	return &i.Log[len(i.Log)-1]
 }
 
 func (i *Instance) fail(reason string) {
-	// create a log to the buffer so we can write to it
-	logger := log.New(&i.Log[len(i.Log)-1].Err, "", 0)
-	logger.Println(reason)
 	i.Status = FAILED
 }
 
@@ -82,14 +76,14 @@ func (i *Instance) Start(completedSetup *bool) {
 	// todo: akelmore - pull out the notion of a first time setup and let modules have their own internal states on a per-job basis
 	if !*completedSetup {
 		logger := i.appendLog("git - initial setup")
-		if err := i.Config.SourceControl.FirstTimeSetup(logger); err != nil {
+		if err := i.Config.SourceControl.FirstTimeSetup(logger.Cmds); err != nil {
 			i.fail(err.Error())
 			return
 		}
 		*completedSetup = true
 	} else {
 		logger := i.appendLog("git - sync")
-		if err := i.Config.SourceControl.UpdateExisting(logger); err != nil {
+		if err := i.Config.SourceControl.UpdateExisting(logger.Cmds); err != nil {
 			i.fail(err.Error())
 			return
 		}
@@ -103,10 +97,9 @@ func (i *Instance) Start(completedSetup *bool) {
 
 	fields := strings.Fields(i.BuildCommand.ExecCommand)
 	if len(fields) > 0 {
-		cmd := exec.Command(fields[0], fields[1:]...)
-		cmd.Stdout = &logger.Out
-		cmd.Stderr = &logger.Err
-		cmd.Dir = i.Config.SourceControl.LocalRepoPath()
+		// todo: akelmore - make sure that fields has more than one field before trying to access it
+		cmd := splitlog.New(logger.Cmds, fields[0], fields[1:]...)
+		cmd.Cmd.Dir = i.Config.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			i.fail("Error running exec command.")
 			return

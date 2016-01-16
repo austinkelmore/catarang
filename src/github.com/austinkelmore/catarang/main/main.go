@@ -5,9 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 	"text/template"
-	"time"
 
 	"github.com/austinkelmore/catarang/job"
 
@@ -152,37 +150,38 @@ func sendWebsocketEvent(eventType string, data interface{}) {
 }
 
 func updateConsoleText() {
-	type inOut struct {
-		err int
-		out int
-	}
-	var sent []inOut
+	// type inOut struct {
+	// 	err int
+	// 	out int
+	// }
+	// var sent []inOut
 
-	for {
-		if len(config.Jobs) > 0 && len(config.Jobs[0].History) > 0 {
-			for index := range config.Jobs[0].History[0].Log {
-				if index >= len(sent) {
-					if index > len(sent)-1 {
-						sent = append(sent, inOut{err: 0, out: 0})
-					}
+	// todo: akelmore - fix up websockets working
+	// for {
+	// 	if len(config.Jobs) > 0 && len(config.Jobs[0].History) > 0 {
+	// 		for index := range config.Jobs[0].History[0].Log {
+	// 			if index >= len(sent) {
+	// 				if index > len(sent)-1 {
+	// 					sent = append(sent, inOut{err: 0, out: 0})
+	// 				}
 
-					logger := &config.Jobs[0].History[0].Log[index]
-					splitErr := strings.Split(string(logger.Err.Bytes()), "\n")
-					for i := sent[index].err; i < len(splitErr); i++ {
-						sendWebsocketEvent("consoleLog", splitErr[i])
-					}
-					splitOut := strings.Split(string(logger.Out.Bytes()), "\n")
-					for i := sent[index].out; i < len(splitOut); i++ {
-						sendWebsocketEvent("consoleLog", splitOut[i])
-					}
+	// 				logger := &config.Jobs[0].History[0].Log[index]
+	// 				splitErr := strings.Split(string(logger.Cmds.Bytes()), "\n")
+	// 				for i := sent[index].err; i < len(splitErr); i++ {
+	// 					sendWebsocketEvent("consoleLog", splitErr[i])
+	// 				}
+	// 				splitOut := strings.Split(string(logger.Out.Bytes()), "\n")
+	// 				for i := sent[index].out; i < len(splitOut); i++ {
+	// 					sendWebsocketEvent("consoleLog", splitOut[i])
+	// 				}
 
-					sent[index].err = len(splitErr)
-					sent[index].out = len(splitOut)
-				}
-			}
-		}
-		time.Sleep(time.Second * 2)
-	}
+	// 				sent[index].err = len(splitErr)
+	// 				sent[index].out = len(splitOut)
+	// 			}
+	// 		}
+	// 	}
+	// 	time.Sleep(time.Second * 2)
+	// }
 }
 
 func handleWebsocketConn(ws *websocket.Conn) {

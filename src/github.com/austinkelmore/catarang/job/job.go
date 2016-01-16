@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/austinkelmore/catarang/multilog"
 	"github.com/austinkelmore/catarang/scm"
+	"github.com/austinkelmore/catarang/splitlog"
 )
 
 // Config is the where a job keeps all of the necessary
@@ -71,8 +71,8 @@ func (j *Job) needsUpdate() bool {
 	log.Println("Running needsUpdate for:", j.Name)
 
 	// todo: akelmore - make these use a real log
-	logger := multilog.New("poll")
-	shouldRun, err := j.CurConfig.SourceControl.Poll(&logger)
+	logger := splitlog.JobLog{Name: "poll"}
+	shouldRun, err := j.CurConfig.SourceControl.Poll(logger.Cmds)
 	if err != nil {
 		log.Println(err.Error())
 	}

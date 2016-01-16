@@ -1,11 +1,11 @@
 package scm
 
-import "github.com/austinkelmore/catarang/multilog"
+import "github.com/austinkelmore/catarang/splitlog"
 
 // SCMer interface for the source control modules
 type SCMer interface {
-	FirstTimeSetup(logger *multilog.Log) error
-	Poll(logger *multilog.Log) (bool, error)
-	UpdateExisting(logger *multilog.Log) error
+	FirstTimeSetup(cmds []splitlog.CmdLog) error
+	Poll(cmds []splitlog.CmdLog) (bool, error)
+	UpdateExisting(cmds []splitlog.CmdLog) error
 	LocalRepoPath() string
 }
