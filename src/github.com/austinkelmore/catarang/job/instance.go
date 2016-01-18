@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/austinkelmore/catarang/splitlog"
+	"github.com/austinkelmore/catarang/ulog"
 )
 
 // Status The job instance's status
@@ -30,7 +30,7 @@ type Instance struct {
 	Config       Config
 	BuildCommand BuildCommand
 	Status       Status
-	Log          []splitlog.JobLog
+	Log          []ulog.Job
 }
 
 // NewInstance Creates a new instance of a job (and copies off the current config)
@@ -40,8 +40,8 @@ func NewInstance(config Config) Instance {
 	return inst
 }
 
-func (i *Instance) appendLog(name string) *splitlog.JobLog {
-	i.Log = append(i.Log, splitlog.JobLog{Name: name})
+func (i *Instance) appendLog(name string) *ulog.Job {
+	i.Log = append(i.Log, ulog.Job{Name: name})
 	return &i.Log[len(i.Log)-1]
 }
 
@@ -98,7 +98,7 @@ func (i *Instance) Start(completedSetup *bool) {
 	fields := strings.Fields(i.BuildCommand.ExecCommand)
 	if len(fields) > 0 {
 		// todo: akelmore - make sure that fields has more than one field before trying to access it
-		cmd := splitlog.New(logger.Cmds, fields[0], fields[1:]...)
+		cmd := ulog.New(logger.Cmds, fields[0], fields[1:]...)
 		cmd.Cmd.Dir = i.Config.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			i.fail("Error running exec command.")

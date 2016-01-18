@@ -1,4 +1,4 @@
-package splitlog
+package ulog
 
 import (
 	"bytes"
@@ -28,18 +28,18 @@ func (c *Writer) Write(p []byte) (n int, err error) {
 	return line.Buf.Write(p)
 }
 
-type CmdLog struct {
+type Cmd struct {
 	Cmd *exec.Cmd
 	Out Writer
 	Err Writer
 	Log []Buffer
 }
 
-func (c *CmdLog) Run() error {
+func (c *Cmd) Run() error {
 	return c.Cmd.Run()
 }
 
-func (c *CmdLog) Bytes() []byte {
+func (c *Cmd) Bytes() []byte {
 	var bytes []byte
 	for _, log := range c.Log {
 		bytes = append(bytes, log.Buf.Bytes()...)
@@ -47,7 +47,7 @@ func (c *CmdLog) Bytes() []byte {
 	return bytes
 }
 
-func (c *CmdLog) init(name string, arg ...string) {
+func (c *Cmd) init(name string, arg ...string) {
 	c.Out = Writer{Lines: &c.Log, Src: CmdStdOut}
 	c.Err = Writer{Lines: &c.Log, Src: CmdStdErr}
 	c.Cmd = exec.Command(name, arg...)
@@ -57,14 +57,14 @@ func (c *CmdLog) init(name string, arg ...string) {
 
 // todo: akelmore - figure out how to make it so that the commands only have access to the section they should
 // instead of the entire command log
-func New(cmds []CmdLog, name string, arg ...string) *CmdLog {
-	cmds = append(cmds, CmdLog{})
+func New(cmds []Cmd, name string, arg ...string) *Cmd {
+	cmds = append(cmds, Cmd{})
 	cmd := &cmds[len(cmds)-1]
 	cmd.init(name, arg...)
 	return cmd
 }
 
-type JobLog struct {
+type Job struct {
 	Name string
-	Cmds []CmdLog
+	Cmds []Cmd
 }

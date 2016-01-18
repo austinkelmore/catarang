@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/austinkelmore/catarang/scm"
-	"github.com/austinkelmore/catarang/splitlog"
+	"github.com/austinkelmore/catarang/ulog"
 )
 
 // Config is the where a job keeps all of the necessary
@@ -71,7 +71,7 @@ func (j *Job) needsUpdate() bool {
 	log.Println("Running needsUpdate for:", j.Name)
 
 	// todo: akelmore - make these use a real log
-	logger := splitlog.JobLog{Name: "poll"}
+	logger := ulog.Job{Name: "poll"}
 	shouldRun, err := j.CurConfig.SourceControl.Poll(logger.Cmds)
 	if err != nil {
 		log.Println(err.Error())
