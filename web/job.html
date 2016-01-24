@@ -1,0 +1,32 @@
+<html>
+	<head>
+		<title>Catarang! Jobs</title>
+	</head>
+	<body>
+		<script type="text/javascript" src="../static/cat.js"></script>
+		This is the job: {{.Name}}
+		<br><br>
+
+		<strong>Job:</strong>
+		<button type="button" onclick="startJob('{{.Name}}');">Start Job</button>
+		<button type="button" onclick="deleteJob('{{.Name}}');">Delete Job</button>
+		<br>
+		<br>
+		<strong>Job instances output:</strong>
+		<ol id="console_log">
+			{{ range $index, $instance := .History }}
+				<li id="{{$index}}">
+					{{range $jLog := $instance.Log}}
+						Job section: {{$jLog.Name}}
+						<br>
+						{{$jLog}}
+						<br>
+						{{range $cmds := $jLog.Cmds}}
+							+ $cmd.Cmd.Args
+						{{end}}
+					{{end}}
+				</li>
+			{{ end }}
+		</ol>
+	</body>
+</html>

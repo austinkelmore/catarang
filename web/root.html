@@ -4,33 +4,9 @@
 	</head>
 	<body>
 		<script type="text/javascript" src="static/cat.js"></script>
-		This is Catarang, a Continuous Integration Server being written by Austin Kelmore in Go.
+		This is Catarang, a Continuous Integration Server being written by Austin Kelmore in Go. This is ugly as hell right now, but it's functional.
 		<br><br>
 
-		<strong>Jobs:</strong>
-		<ul id="jobs">
-			{{ range $key, $value := .Jobs }}
-				<li id="{{$value.Name}}">
-					{{ $value.Name }}
-					<br>
-					Origin Repository: {{ $value.CurConfig.SourceControl.Origin }}
-					<br>
-					<button type="button" onclick="startJob('{{$value.Name}}');">Start Job</button>
-					<button type="button" onclick="deleteJob('{{$value.Name}}');">Delete Job</button>
-				</li>
-			{{ end }}
-		</ul>
-		<br>
-		<strong>Add a new job:</strong>
-		<form action="javascript:void(0);" method="POST" onsubmit="addJob(this);">
-			Name: <input type="text" name="name" required><br>
-			git URL: <input type="text" name="repo" required><br>
-			<input type="submit" value="Add New Job">
-		</form>
-		<br>
-		<br>
-		<strong>Job console output:</strong>
-		<ol id="console_log">
-		</ol>
+		<strong><a href="jobs">Jobs</a></strong>
 	</body>
 </html>
