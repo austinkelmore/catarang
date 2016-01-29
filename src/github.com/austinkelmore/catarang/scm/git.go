@@ -28,7 +28,7 @@ type Git struct {
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
-func (g Git) FirstTimeSetup(cmds []ulog.Cmd) error {
+func (g Git) FirstTimeSetup(cmds *[]ulog.Cmd) error {
 	cmd := ulog.New(cmds, "git", "clone", g.Origin, g.LocalRepo)
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error doing first time setup for: " + g.Origin)
@@ -38,7 +38,7 @@ func (g Git) FirstTimeSetup(cmds []ulog.Cmd) error {
 }
 
 // Poll polls the git master to see if the local repository is different from the master's head
-func (g *Git) Poll(cmds []ulog.Cmd) (bool, error) {
+func (g *Git) Poll(cmds *[]ulog.Cmd) (bool, error) {
 	lsremote := ulog.New(cmds, "git", "-C", g.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
 	if err := lsremote.Run(); err != nil {
 		return false, errors.New("Error polling head of origin repo: " + err.Error())
@@ -60,13 +60,10 @@ func (g *Git) Poll(cmds []ulog.Cmd) (bool, error) {
 }
 
 // UpdateExisting syncs the git repository
-func (g *Git) UpdateExisting(cmds []ulog.Cmd) error {
-
+func (g *Git) UpdateExisting(cmds *[]ulog.Cmd) error {
 	cmd := ulog.New(cmds, "git", "-C", g.LocalRepo, "pull")
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error pulling git.")
-	} else if bytes.Contains(cmd.Bytes(), []byte("Already up-to-date.")) {
-		return errors.New("Something went wrong with git pull, it was already up to date. It shouldn't have been.")
 	}
 
 	return nil

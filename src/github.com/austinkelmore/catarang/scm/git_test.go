@@ -124,7 +124,7 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 
 	git := scm.NewGit(origin, clone)
 	logger := ulog.Job{Name: "test"}
-	err = git.FirstTimeSetup(logger.Cmds)
+	err = git.FirstTimeSetup(&logger.Cmds)
 	return git, err
 }
 
@@ -163,7 +163,7 @@ func TestFirstTimeSetupFail(t *testing.T) {
 	git := scm.NewGit("bogus_repo_path/", localPath+"FirstTimeSetupFail/")
 
 	logger := ulog.Job{Name: "test"}
-	err := git.FirstTimeSetup(logger.Cmds)
+	err := git.FirstTimeSetup(&logger.Cmds)
 	if err == nil {
 		t.Error("Expected failure for bogus repo path. No error returned.")
 	}
@@ -179,7 +179,7 @@ func TestSetupPollAndSync(t *testing.T) {
 		return
 	}
 	logger := ulog.Job{Name: "test"}
-	shouldRun, err := git.Poll(logger.Cmds)
+	shouldRun, err := git.Poll(&logger.Cmds)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
@@ -189,7 +189,7 @@ func TestSetupPollAndSync(t *testing.T) {
 
 	syncBackOneRev(t, testrepo)
 
-	shouldRun, err = git.Poll(logger.Cmds)
+	shouldRun, err = git.Poll(&logger.Cmds)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
@@ -197,11 +197,8 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error("Expected to have to run. Should NOT be fully synced.")
 	}
 
-	if err = git.UpdateExisting(logger.Cmds); err != nil {
+	if err = git.UpdateExisting(&logger.Cmds); err != nil {
 		t.Errorf("Should have been able to update git repo.\n%s\n", err.Error())
-	}
-	if err = git.UpdateExisting(logger.Cmds); err == nil {
-		t.Error("Should not have been able to update git repo.")
 	}
 	git.LocalRepo = "bogus_repo_path"
 
@@ -210,15 +207,15 @@ func TestSetupPollAndSync(t *testing.T) {
 	// the first one, but figure out how to test the failure of the second
 	// one (how does rev-parse fail)
 
-	if err = git.UpdateExisting(logger.Cmds); err == nil {
+	if err = git.UpdateExisting(&logger.Cmds); err == nil {
 		t.Error("Should not be able to update bogus local repo.")
 	}
 
-	if _, err = git.Poll(logger.Cmds); err == nil {
+	if _, err = git.Poll(&logger.Cmds); err == nil {
 		t.Error("Should not be able to poll bogus local repo.")
 	}
 	git.Origin = "bogus_repo_path"
-	if _, err = git.Poll(logger.Cmds); err == nil {
+	if _, err = git.Poll(&logger.Cmds); err == nil {
 		t.Error("Should not be able to poll bogus origin repo.")
 	}
 }
@@ -247,7 +244,7 @@ func TestPollEmpty(t *testing.T) {
 
 	// todo: akelmore - do we want to be able to poll an empty repository?
 	logger := ulog.Job{Name: "test"}
-	shouldRun, err := git.Poll(logger.Cmds)
+	shouldRun, err := git.Poll(&logger.Cmds)
 	if err == nil {
 		t.Error("Should not be able to poll an empty repository.")
 	}

@@ -76,14 +76,14 @@ func (i *Instance) Start(completedSetup *bool) {
 	// todo: akelmore - pull out the notion of a first time setup and let modules have their own internal states on a per-job basis
 	if !*completedSetup {
 		logger := i.appendLog("git - initial setup")
-		if err := i.Config.SourceControl.FirstTimeSetup(logger.Cmds); err != nil {
+		if err := i.Config.SourceControl.FirstTimeSetup(&logger.Cmds); err != nil {
 			i.fail(err.Error())
 			return
 		}
 		*completedSetup = true
 	} else {
 		logger := i.appendLog("git - sync")
-		if err := i.Config.SourceControl.UpdateExisting(logger.Cmds); err != nil {
+		if err := i.Config.SourceControl.UpdateExisting(&logger.Cmds); err != nil {
 			i.fail(err.Error())
 			return
 		}
@@ -98,7 +98,7 @@ func (i *Instance) Start(completedSetup *bool) {
 	fields := strings.Fields(i.BuildCommand.ExecCommand)
 	if len(fields) > 0 {
 		// todo: akelmore - make sure that fields has more than one field before trying to access it
-		cmd := ulog.New(logger.Cmds, fields[0], fields[1:]...)
+		cmd := ulog.New(&logger.Cmds, fields[0], fields[1:]...)
 		cmd.Cmd.Dir = i.Config.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			i.fail("Error running exec command.")

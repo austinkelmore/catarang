@@ -19,10 +19,13 @@
 					{{range $jLog := $instance.Log}}
 						Job section: {{$jLog.Name}}
 						<br>
-						{{$jLog}}
-						<br>
 						{{range $cmds := $jLog.Cmds}}
-							+ $cmd.Cmd.Args
+							+ {{$cmds.Cmd.Args}}
+							<br>
+							{{range $log := $cmds.Log}}
+								&nbsp&nbsp&nbsp&nbsp{{$log.Buf}}
+							<br>
+							{{end}}
 						{{end}}
 					{{end}}
 				</li>

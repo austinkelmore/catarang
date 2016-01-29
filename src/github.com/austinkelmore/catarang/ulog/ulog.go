@@ -17,12 +17,12 @@ type Buffer struct {
 	Src CmdType
 }
 
-type Writer struct {
+type CmdWriter struct {
 	Lines *[]Buffer
 	Src   CmdType
 }
 
-func (c *Writer) Write(p []byte) (n int, err error) {
+func (c *CmdWriter) Write(p []byte) (n int, err error) {
 	*c.Lines = append(*c.Lines, Buffer{Src: c.Src})
 	line := &(*c.Lines)[len(*c.Lines)-1]
 	return line.Buf.Write(p)
@@ -30,8 +30,8 @@ func (c *Writer) Write(p []byte) (n int, err error) {
 
 type Cmd struct {
 	Cmd *exec.Cmd
-	Out Writer
-	Err Writer
+	Out CmdWriter
+	Err CmdWriter
 	Log []Buffer
 }
 
@@ -48,8 +48,8 @@ func (c *Cmd) Bytes() []byte {
 }
 
 func (c *Cmd) init(name string, arg ...string) {
-	c.Out = Writer{Lines: &c.Log, Src: CmdStdOut}
-	c.Err = Writer{Lines: &c.Log, Src: CmdStdErr}
+	c.Out = CmdWriter{Lines: &c.Log, Src: CmdStdOut}
+	c.Err = CmdWriter{Lines: &c.Log, Src: CmdStdErr}
 	c.Cmd = exec.Command(name, arg...)
 	c.Cmd.Stdout = &c.Out
 	c.Cmd.Stderr = &c.Err
@@ -57,9 +57,9 @@ func (c *Cmd) init(name string, arg ...string) {
 
 // todo: akelmore - figure out how to make it so that the commands only have access to the section they should
 // instead of the entire command log
-func New(cmds []Cmd, name string, arg ...string) *Cmd {
-	cmds = append(cmds, Cmd{})
-	cmd := &cmds[len(cmds)-1]
+func New(cmds *[]Cmd, name string, arg ...string) *Cmd {
+	*cmds = append(*cmds, Cmd{})
+	cmd := &(*cmds)[len(*cmds)-1]
 	cmd.init(name, arg...)
 	return cmd
 }
