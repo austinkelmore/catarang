@@ -21,7 +21,10 @@ window.onload = function() {
 				var jobs = document.getElementById("jobs");
 				var li = document.createElement("li");
 				li.id = msg.data.name;
-				li.appendChild(document.createTextNode(msg.data.name));
+				a = document.createElement("a");
+				a.href = "job/" + msg.data.name;
+				a.innerHTML = msg.data.name;
+				li.appendChild(a);
 				li.appendChild(document.createElement("br"));
 				li.appendChild(document.createTextNode("Origin Repository: " + msg.data.repo));
 				li.appendChild(document.createElement("br"));

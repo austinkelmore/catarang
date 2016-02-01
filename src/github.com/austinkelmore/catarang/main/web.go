@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/austinkelmore/catarang/job"
+	"github.com/austinkelmore/catarang/util"
 
 	"github.com/gorilla/mux"
 	"golang.org/x/net/websocket"
@@ -62,6 +63,7 @@ func addJobHandler(w http.ResponseWriter, r *http.Request) {
 func deleteJob(jobName string) {
 	for i := range config.Jobs {
 		if config.Jobs[i].Name == jobName {
+			util.ForceRemoveAll(config.Jobs[i].CurConfig.LocalPath)
 			config.Jobs = append(config.Jobs[:i], config.Jobs[i+1:]...)
 			saveConfig()
 			d := struct {

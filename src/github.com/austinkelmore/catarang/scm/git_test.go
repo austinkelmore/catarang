@@ -4,12 +4,12 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/austinkelmore/catarang/scm"
 	"github.com/austinkelmore/catarang/ulog"
+	"github.com/austinkelmore/catarang/util"
 )
 
 // TestMain is the entry point for this file's tests
@@ -22,41 +22,12 @@ func TestMain(m *testing.M) {
 var localPath = "../tests/"
 
 func cleanUpTests() {
-	forceRemoveAll(localPath)
-}
-
-// this function has to exist because Go's os.RemoveAll doesn't remove locked files
-// on Windows, which git has for some reason
-func forceRemoveAll(path string) error {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return nil
-	}
-	if !fi.IsDir() {
-		err := os.Chmod(path, 0666)
-		if err != nil {
-			return err
-		}
-	}
-	fd, err := os.Open(path)
-	defer fd.Close()
-	if err != nil {
-		return err
-	}
-	names, _ := fd.Readdirnames(-1)
-	for _, name := range names {
-		err = forceRemoveAll(path + string(filepath.Separator) + name)
-		if err != nil {
-			return err
-		}
-	}
-	os.RemoveAll(path)
-	return nil
+	util.ForceRemoveAll(localPath)
 }
 
 func initRepo(t *testing.T, origin string) error {
 	// clear out the origin if it exists and start from scratch
-	err := forceRemoveAll(origin)
+	err := util.ForceRemoveAll(origin)
 	if err != nil {
 		t.Logf("Error removing files: %s\n", err.Error())
 		return err
@@ -116,7 +87,7 @@ func createTestRepo(t *testing.T, origin string) error {
 
 func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) {
 	// start the clone from scratch as well
-	err := forceRemoveAll(clone)
+	err := util.ForceRemoveAll(clone)
 	if err != nil {
 		t.Errorf("Error removing files. %s\n", err.Error())
 		return nil, err
