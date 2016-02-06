@@ -57,7 +57,7 @@ func updateConsoleText() {
 	// }
 	// var sent []inOut
 
-	// todo: akelmore - fix up websockets working
+	// // todo: akelmore - fix up websockets working
 	// for {
 	// 	if len(config.Jobs) > 0 && len(config.Jobs[0].History) > 0 {
 	// 		for index := range config.Jobs[0].History[0].Log {

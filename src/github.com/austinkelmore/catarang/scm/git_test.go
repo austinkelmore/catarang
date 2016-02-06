@@ -94,7 +94,7 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 	}
 
 	git := scm.NewGit(origin, clone)
-	logger := ulog.Job{Name: "test"}
+	logger := ulog.NewJob("test")
 	err = git.FirstTimeSetup(&logger.Cmds)
 	return git, err
 }
@@ -133,7 +133,7 @@ func TestGitExists(t *testing.T) {
 func TestFirstTimeSetupFail(t *testing.T) {
 	git := scm.NewGit("bogus_repo_path/", localPath+"FirstTimeSetupFail/")
 
-	logger := ulog.Job{Name: "test"}
+	logger := ulog.NewJob("test")
 	err := git.FirstTimeSetup(&logger.Cmds)
 	if err == nil {
 		t.Error("Expected failure for bogus repo path. No error returned.")
@@ -149,7 +149,7 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	logger := ulog.Job{Name: "test"}
+	logger := ulog.NewJob("test")
 	shouldRun, err := git.Poll(&logger.Cmds)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
@@ -214,7 +214,7 @@ func TestPollEmpty(t *testing.T) {
 	}
 
 	// todo: akelmore - do we want to be able to poll an empty repository?
-	logger := ulog.Job{Name: "test"}
+	logger := ulog.NewJob("test")
 	shouldRun, err := git.Poll(&logger.Cmds)
 	if err == nil {
 		t.Error("Should not be able to poll an empty repository.")

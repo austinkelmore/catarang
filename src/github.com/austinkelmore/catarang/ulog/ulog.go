@@ -8,63 +8,92 @@ import (
 type CmdType int
 
 const (
-	CmdStdOut CmdType = 0
-	CmdStdErr         = 1
+	CmdTypeNone CmdType = 0
+	CmdTypeOut          = 1
+	CmdTypeErr          = 2
 )
 
-type Buffer struct {
-	Buf bytes.Buffer
+type WriteSection struct {
+	Len int
 	Src CmdType
 }
 
 type CmdWriter struct {
-	Lines *[]Buffer
-	Src   CmdType
+	Cmd *Cmd
+	Src CmdType
 }
 
 func (c *CmdWriter) Write(p []byte) (n int, err error) {
-	*c.Lines = append(*c.Lines, Buffer{Src: c.Src})
-	line := &(*c.Lines)[len(*c.Lines)-1]
-	return line.Buf.Write(p)
+	n, err = c.Cmd.Buf.Write(p)
+
+	sect := c.Cmd.Sect
+	// if the source of the last write is the same as this one, increase the size
+	// of the recorded write instead of creating a new one
+	if len(sect) > 0 && sect[len(sect)-1].Src == c.Src {
+		sect[len(sect)-1].Len += n
+	} else {
+		sect = append(sect, WriteSection{Len: n, Src: c.Src})
+	}
+
+	for _, callback := range *c.Cmd.callbacks {
+		callback.CmdLog(p)
+	}
+
+	return n, err
+}
+
+type CmdLogger interface {
+	CmdLog(p []byte)
 }
 
 type Cmd struct {
-	Cmd *exec.Cmd
-	Out CmdWriter
-	Err CmdWriter
-	Log []Buffer
+	Cmd  *exec.Cmd
+	Out  CmdWriter
+	Err  CmdWriter
+	Buf  bytes.Buffer
+	Sect []WriteSection // this keeps track of what parts of Buf were written to by stdout and stderr
+
+	// todo: akelmore - is this the best way to do cmd logging with callbacks? i don't think so
+	callbacks *[]CmdLogger
 }
 
 func (c *Cmd) Run() error {
 	return c.Cmd.Run()
 }
 
-func (c *Cmd) Bytes() []byte {
-	var bytes []byte
-	for _, log := range c.Log {
-		bytes = append(bytes, log.Buf.Bytes()...)
-	}
-	return bytes
-}
-
-func (c *Cmd) init(name string, arg ...string) {
-	c.Out = CmdWriter{Lines: &c.Log, Src: CmdStdOut}
-	c.Err = CmdWriter{Lines: &c.Log, Src: CmdStdErr}
+func (c *Cmd) init(callbacks *[]CmdLogger, name string, arg ...string) {
+	c.Out = CmdWriter{Cmd: c, Src: CmdTypeOut}
+	c.Err = CmdWriter{Cmd: c, Src: CmdTypeErr}
 	c.Cmd = exec.Command(name, arg...)
 	c.Cmd.Stdout = &c.Out
 	c.Cmd.Stderr = &c.Err
+	c.callbacks = callbacks
 }
 
-// todo: akelmore - figure out how to make it so that the commands only have access to the section they should
-// instead of the entire command log
-func New(cmds *[]Cmd, name string, arg ...string) *Cmd {
-	*cmds = append(*cmds, Cmd{})
-	cmd := &(*cmds)[len(*cmds)-1]
-	cmd.init(name, arg...)
+type Commands struct {
+	Cmds      []Cmd
+	callbacks *[]CmdLogger
+}
+
+func (c *Commands) New(name string, arg ...string) *Cmd {
+	c.Cmds = append(c.Cmds, Cmd{})
+	cmd := &c.Cmds[len(c.Cmds)-1]
+	cmd.init(c.callbacks, name, arg...)
 	return cmd
 }
 
 type Job struct {
-	Name string
-	Cmds []Cmd
+	Name      string
+	Cmds      Commands
+	callbacks []CmdLogger
+}
+
+func NewJob(name string) *Job {
+	j := Job{Name: name}
+	j.Cmds.callbacks = &j.callbacks
+	return &j
+}
+
+func (j *Job) AddCallback(logger CmdLogger) {
+	j.callbacks = append(j.callbacks, logger)
 }

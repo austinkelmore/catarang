@@ -41,7 +41,7 @@ func NewInstance(config Config) Instance {
 }
 
 func (i *Instance) appendLog(name string) *ulog.Job {
-	i.Log = append(i.Log, ulog.Job{Name: name})
+	i.Log = append(i.Log, *ulog.NewJob(name))
 	return &i.Log[len(i.Log)-1]
 }
 
@@ -98,7 +98,7 @@ func (i *Instance) Start(completedSetup *bool) {
 	fields := strings.Fields(i.BuildCommand.ExecCommand)
 	if len(fields) > 0 {
 		// todo: akelmore - make sure that fields has more than one field before trying to access it
-		cmd := ulog.New(&logger.Cmds, fields[0], fields[1:]...)
+		cmd := logger.Cmds.New(fields[0], fields[1:]...)
 		cmd.Cmd.Dir = i.Config.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			i.fail("Error running exec command.")

@@ -71,7 +71,7 @@ func (j *Job) needsUpdate() bool {
 	log.Println("Running needsUpdate for:", j.Name)
 
 	// todo: akelmore - make these use a real log
-	logger := ulog.Job{Name: "poll"}
+	logger := ulog.NewJob("poll")
 	shouldRun, err := j.CurConfig.SourceControl.Poll(&logger.Cmds)
 	if err != nil {
 		log.Println(err.Error())
