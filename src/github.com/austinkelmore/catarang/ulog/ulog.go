@@ -38,14 +38,14 @@ func (c *CmdWriter) Write(p []byte) (n int, err error) {
 	}
 
 	for _, callback := range *c.cmd.callbacks {
-		callback.CmdLog(p)
+		callback.CmdLog(p, c.Src)
 	}
 
 	return n, err
 }
 
 type CmdLogger interface {
-	CmdLog(p []byte)
+	CmdLog(p []byte, t CmdType)
 }
 
 type Cmd struct {

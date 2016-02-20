@@ -24,12 +24,15 @@ type Job struct {
 	Enabled        bool
 	CurConfig      Config
 	CompletedSetup bool
+	JobLog         ulog.Job
 	History        []Instance
 }
 
 // NewJob creates a new job and initializes it with necessary values
 func NewJob(name string, origin string) Job {
 	job := Job{Name: name, Enabled: true, CompletedSetup: false}
+
+	job.JobLog.Name = "job_log"
 
 	// todo: akelmore - configure local path
 	job.CurConfig.LocalPath = "jobs/" + name + "/"
@@ -70,9 +73,7 @@ func (j *Job) needsUpdate() bool {
 	}
 	log.Println("Running needsUpdate for:", j.Name)
 
-	// todo: akelmore - make these use a real log
-	logger := ulog.NewJob("poll")
-	shouldRun, err := j.CurConfig.SourceControl.Poll(&logger.Cmds)
+	shouldRun, err := j.CurConfig.SourceControl.Poll(&j.JobLog.Cmds)
 	if err != nil {
 		log.Println(err.Error())
 	}

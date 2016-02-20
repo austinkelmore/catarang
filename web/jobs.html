@@ -9,7 +9,7 @@
 
 		<strong>Jobs:</strong>
 		<ul id="jobs">
-			{{ range $key, $value := .Jobs }}
+			{{ range $key, $value := . }}
 				<li id="{{$value.Name}}">
 					<a href="job/{{$value.Name}}">{{ $value.Name }}</a>
 					<br>
