@@ -17,12 +17,13 @@ func CreateRoutes() *mux.Router {
 	r.HandleFunc("/", renderWebpage)
 	r.HandleFunc("/jobs", jobsHandler)
 	r.HandleFunc("/jobs/add", addJobHandler)
+	r.Handle("/jobs/ws", websocket.Handler(handleJobsWSConn))
 
 	r.HandleFunc("/job/{name}", jobHandler)
 	r.HandleFunc("/job/{name}/start", startJobHandler)
 	r.HandleFunc("/job/{name}/delete", deleteJobHandler)
-
-	r.Handle("/ws", websocket.Handler(handleWebsocketConn))
+	r.HandleFunc("/job/{name}/ws", jobWSHandler)
+	// r.Handle("/job/{name}/ws", websocket.Handler(handleJobWSConn))
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 	return r
@@ -102,14 +103,26 @@ func sendWebsocketEvent(eventType string, data interface{}) {
 		EventType string      `json:"type"`
 		Data      interface{} `json:"data"`
 	}{eventType, data}
-	catarang.SendToConnections(d)
+	catarang.SendToJobsConns(d)
 }
 
-func handleWebsocketConn(ws *websocket.Conn) {
-	catarang.AddConnection(ws)
+func handleJobsWSConn(ws *websocket.Conn) {
+	catarang.AddJobsConn(ws)
 
 	// never exit from this function otherwise the websocket connection closes
 	select {}
+}
+
+func jobWSHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobName := vars["name"]
+
+	websocket.Handler(func(ws *websocket.Conn) {
+		catarang.AddJobConn(jobName, ws)
+
+		// never exit from this function otherwise the websocket connection closes
+		select {}
+	}).ServeHTTP(w, r)
 }
 
 func renderWebpage(w http.ResponseWriter, r *http.Request) {

@@ -12,9 +12,14 @@ import (
 
 var cats Catarang
 
+func init() {
+	cats.conns = make(map[string][]*websocket.Conn)
+}
+
 type Catarang struct {
-	Jobs  []job.Job
-	conns []*websocket.Conn
+	Jobs      []job.Job
+	conns     map[string][]*websocket.Conn
+	jobsConns []*websocket.Conn
 }
 
 func AddJob(name string, repo string) bool {
@@ -60,13 +65,25 @@ func GetJobs() []job.Job {
 	return cats.Jobs
 }
 
-func AddConnection(ws *websocket.Conn) {
-	cats.conns = append(cats.conns, ws)
+func AddJobsConn(ws *websocket.Conn) {
+	cats.jobsConns = append(cats.jobsConns, ws)
 }
 
-func SendToConnections(d interface{}) {
-	for _, conn := range cats.conns {
-		if err := websocket.JSON.Send(conn, d); err != nil {
+func AddJobConn(jobName string, ws *websocket.Conn) {
+	cats.conns[jobName] = append(cats.conns[jobName], ws)
+}
+
+func SendToJobsConns(data interface{}) {
+	for _, conn := range cats.jobsConns {
+		if err := websocket.JSON.Send(conn, data); err != nil {
+			log.Printf("Error sending websocket: %s\n", err.Error())
+		}
+	}
+}
+
+func SendToJobConns(jobName string, data interface{}) {
+	for _, conn := range cats.conns[jobName] {
+		if err := websocket.JSON.Send(conn, data); err != nil {
 			log.Printf("Error sending websocket: %s\n", err.Error())
 		}
 	}

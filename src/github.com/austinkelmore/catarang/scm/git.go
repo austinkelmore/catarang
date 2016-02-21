@@ -50,12 +50,12 @@ func (g *Git) Poll(cmds *ulog.Commands) (bool, error) {
 	}
 
 	// empty repositories don't return any text since they have no HEAD
-	if len(lsremote.Buf) == 0 || len(revparse.Buf) == 0 {
+	if len(lsremote.Str) == 0 || len(revparse.Str) == 0 {
 		return false, nil
 	}
 
-	remoteHead := string(bytes.Fields([]byte(lsremote.Buf))[0])
-	localHead := string(bytes.Fields([]byte(revparse.Buf))[0])
+	remoteHead := string(bytes.Fields([]byte(lsremote.Str))[0])
+	localHead := string(bytes.Fields([]byte(revparse.Str))[0])
 	return remoteHead != localHead, nil
 }
 

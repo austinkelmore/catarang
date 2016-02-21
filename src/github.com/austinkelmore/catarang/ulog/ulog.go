@@ -26,7 +26,7 @@ type CmdWriter struct {
 func (c *CmdWriter) Write(p []byte) (n int, err error) {
 	var b bytes.Buffer
 	n, err = b.Write(p)
-	c.cmd.Buf += b.String()
+	c.cmd.Str += b.String()
 
 	sect := &c.cmd.Sect
 	// if the source of the last write is the same as this one, increase the size
@@ -37,51 +37,33 @@ func (c *CmdWriter) Write(p []byte) (n int, err error) {
 		*sect = append(*sect, WriteSection{Len: n, Src: c.Src})
 	}
 
-	for _, callback := range *c.cmd.callbacks {
-		callback.CmdLog(p, c.Src)
-	}
-
 	return n, err
-}
-
-type CmdLogger interface {
-	CmdLog(p []byte, t CmdType)
 }
 
 type Cmd struct {
 	Cmd  *exec.Cmd
 	Out  CmdWriter
 	Err  CmdWriter
-	Buf  string
-	Sect []WriteSection // this keeps track of what parts of Buf were written to by stdout and stderr
-
-	// todo: akelmore - is this the best way to do cmd logging with callbacks? i don't think so
-	callbacks *[]CmdLogger
+	Str  string
+	Sect []WriteSection // this keeps track of what parts of Str were written to by stdout and stderr
 }
 
 func (c *Cmd) Run() error {
 	return c.Cmd.Run()
 }
 
-func (c *Cmd) init(callbacks *[]CmdLogger, name string, arg ...string) {
-	c.Out = CmdWriter{cmd: c, Src: CmdTypeOut}
-	c.Err = CmdWriter{cmd: c, Src: CmdTypeErr}
-	c.Cmd = exec.Command(name, arg...)
-	c.Cmd.Stdout = &c.Out
-	c.Cmd.Stderr = &c.Err
-	c.callbacks = callbacks
-}
-
 type Commands struct {
 	Cmds []Cmd
-	// todo: akelmore - don't store callbacks, make it a messaging system
-	callbacks []CmdLogger
 }
 
 func (c *Commands) New(name string, arg ...string) *Cmd {
 	c.Cmds = append(c.Cmds, Cmd{})
 	cmd := &c.Cmds[len(c.Cmds)-1]
-	cmd.init(&c.callbacks, name, arg...)
+	cmd.Out = CmdWriter{cmd: cmd, Src: CmdTypeOut}
+	cmd.Err = CmdWriter{cmd: cmd, Src: CmdTypeErr}
+	cmd.Cmd = exec.Command(name, arg...)
+	cmd.Cmd.Stdout = &cmd.Out
+	cmd.Cmd.Stderr = &cmd.Err
 	return cmd
 }
 
@@ -93,8 +75,4 @@ type Job struct {
 func NewJob(name string) *Job {
 	j := Job{Name: name}
 	return &j
-}
-
-func (j *Job) AddCallback(logger CmdLogger) {
-	j.Cmds.callbacks = append(j.Cmds.callbacks, logger)
 }
