@@ -52,9 +52,11 @@ func (c *Cmd) Run() error {
 	return c.Cmd.Run()
 }
 
-func NewCmd(cmds *[]Cmd, name string, arg ...string) *Cmd {
-	*cmds = append(*cmds, Cmd{})
-	cmd := &(*cmds)[len(*cmds)-1]
+type CmdList []Cmd
+
+func (c *CmdList) New(name string, arg ...string) *Cmd {
+	*c = append(*c, Cmd{})
+	cmd := &(*c)[len(*c)-1]
 	cmd.Out = CmdWriter{cmd: cmd, Src: CmdTypeOut}
 	cmd.Err = CmdWriter{cmd: cmd, Src: CmdTypeErr}
 	cmd.Cmd = exec.Command(name, arg...)
@@ -65,7 +67,7 @@ func NewCmd(cmds *[]Cmd, name string, arg ...string) *Cmd {
 
 type Job struct {
 	Name string
-	Cmds []Cmd
+	Cmds CmdList
 }
 
 func NewJob(name string) *Job {

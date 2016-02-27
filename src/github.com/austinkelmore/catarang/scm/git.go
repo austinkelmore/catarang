@@ -28,8 +28,8 @@ type Git struct {
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
-func (g Git) FirstTimeSetup(cmds *[]ulog.Cmd) error {
-	cmd := ulog.NewCmd(cmds, "git", "clone", g.Origin, g.LocalRepo)
+func (g Git) FirstTimeSetup(cmds *ulog.CmdList) error {
+	cmd := cmds.New("git", "clone", g.Origin, g.LocalRepo)
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error doing first time setup for: " + g.Origin)
 	}
@@ -38,13 +38,13 @@ func (g Git) FirstTimeSetup(cmds *[]ulog.Cmd) error {
 }
 
 // Poll polls the git master to see if the local repository is different from the master's head
-func (g *Git) Poll(cmds *[]ulog.Cmd) (bool, error) {
-	lsremote := ulog.NewCmd(cmds, "git", "-C", g.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
+func (g *Git) Poll(cmds *ulog.CmdList) (bool, error) {
+	lsremote := cmds.New("git", "-C", g.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
 	if err := lsremote.Run(); err != nil {
 		return false, errors.New("Error polling head of origin repo: " + err.Error())
 	}
 
-	revparse := ulog.NewCmd(cmds, "git", "-C", g.LocalRepo, "rev-parse", "HEAD")
+	revparse := cmds.New("git", "-C", g.LocalRepo, "rev-parse", "HEAD")
 	if err := revparse.Run(); err != nil {
 		return false, errors.New("Error finding head of local repo: " + err.Error())
 	}
@@ -60,8 +60,8 @@ func (g *Git) Poll(cmds *[]ulog.Cmd) (bool, error) {
 }
 
 // UpdateExisting syncs the git repository
-func (g *Git) UpdateExisting(cmds *[]ulog.Cmd) error {
-	cmd := ulog.NewCmd(cmds, "git", "-C", g.LocalRepo, "pull")
+func (g *Git) UpdateExisting(cmds *ulog.CmdList) error {
+	cmd := cmds.New("git", "-C", g.LocalRepo, "pull")
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error pulling git.")
 	}
