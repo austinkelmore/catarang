@@ -27,7 +27,8 @@ const (
 type Instance struct {
 	StartTime    time.Time
 	EndTime      time.Time
-	Config       Config
+	Num          int
+	JobConfig    Config
 	BuildCommand BuildCommand
 	Status       Status
 	Artifacts    Artifact
@@ -36,8 +37,8 @@ type Instance struct {
 
 // NewInstance Creates a new instance of a job (and copies off the current config)
 // and starts the instance running
-func NewInstance(config Config) Instance {
-	inst := Instance{StartTime: time.Now(), Status: RUNNING, Config: config}
+func NewInstance(config Config, instanceNum int) Instance {
+	inst := Instance{StartTime: time.Now(), Status: RUNNING, JobConfig: config, Num: instanceNum}
 	return inst
 }
 
@@ -53,12 +54,12 @@ func (i *Instance) fail(reason string) {
 // todo: akelmore - do i still need to update the build command before starting every time? should i only do it sometimes or not at all?
 func (i *Instance) updateBuildCommand() error {
 	// read in the config file's build command
-	path := i.Config.BuildConfigPath
+	path := i.JobConfig.BuildConfigPath
 	if path == "" {
 		path = ".catarang.json"
 	}
 
-	file, err := ioutil.ReadFile(i.Config.SourceControl.LocalRepoPath() + path)
+	file, err := ioutil.ReadFile(i.JobConfig.SourceControl.LocalRepoPath() + path)
 	if err != nil {
 		return errors.New("Error reading build config file: " + path)
 	}
@@ -74,17 +75,16 @@ func (i *Instance) updateBuildCommand() error {
 // todo: akelmore - i don't like passing a bool for the completedSetup, figure something better out
 func (i *Instance) Start(completedSetup *bool) {
 	// todo: akelmore - make jobs have an array of "things" to do rather than hard code scm stuff first
-	// todo: akelmore - pull out the notion of a first time setup and let modules have their own internal states on a per-job basis
 	if !*completedSetup {
 		logger := i.appendLog("git - initial setup")
-		if err := i.Config.SourceControl.FirstTimeSetup(&logger.Cmds); err != nil {
+		if err := i.JobConfig.SourceControl.FirstTimeSetup(&logger.Cmds); err != nil {
 			i.fail(err.Error())
 			return
 		}
 		*completedSetup = true
 	} else {
 		logger := i.appendLog("git - sync")
-		if err := i.Config.SourceControl.UpdateExisting(&logger.Cmds); err != nil {
+		if err := i.JobConfig.SourceControl.UpdateExisting(&logger.Cmds); err != nil {
 			i.fail(err.Error())
 			return
 		}
@@ -100,7 +100,7 @@ func (i *Instance) Start(completedSetup *bool) {
 	if len(fields) > 0 {
 		// todo: akelmore - make sure that fields has more than one field before trying to access it
 		cmd := logger.Cmds.New(fields[0], fields[1:]...)
-		cmd.Cmd.Dir = i.Config.SourceControl.LocalRepoPath()
+		cmd.Cmd.Dir = i.JobConfig.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			i.fail("Error running exec command.")
 			return
@@ -110,7 +110,7 @@ func (i *Instance) Start(completedSetup *bool) {
 	// todo: akelmore - make artifacts part of the array of things
 	log.Printf("artifacts: %+v\n", i.BuildCommand.Artifacts)
 	for _, artifact := range i.BuildCommand.Artifacts {
-		if err := artifact.Save(i.Config.SourceControl.LocalRepoPath()); err != nil {
+		if err := artifact.Save(i.JobConfig.SourceControl.LocalRepoPath(), i.JobConfig.Name, i.Num); err != nil {
 			log.Printf("Error saving artifact. %s\n", artifact.ToSave)
 			i.fail("Error saving artifact.")
 			return

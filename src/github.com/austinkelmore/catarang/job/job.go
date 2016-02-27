@@ -11,6 +11,7 @@ import (
 // Config is the where a job keeps all of the necessary
 // information for running an instance of itself
 type Config struct {
+	Name            string
 	LocalPath       string
 	BuildConfigPath string
 	// todo: akelmore - don't use git instead of an interface for scms. Fix saving/loading interface
@@ -20,17 +21,19 @@ type Config struct {
 // Job is the way in which you can run commands on the server or nodes
 // it's the main reason this whole build system is created - to run jobs
 type Job struct {
-	Name           string
-	Enabled        bool
-	CurConfig      Config
+	CurConfig Config
+	Enabled   bool
+	JobLog    ulog.Job // log for the job outside of instances of it being run (used for polling)
+	History   []Instance
+
+	// todo: akelmore - move CompletedSetup to a global space for the individual plugin
 	CompletedSetup bool
-	JobLog         ulog.Job
-	History        []Instance
 }
 
 // NewJob creates a new job and initializes it with necessary values
 func NewJob(name string, origin string) Job {
-	job := Job{Name: name, Enabled: true, CompletedSetup: false}
+	job := Job{Enabled: true, CompletedSetup: false}
+	job.CurConfig.Name = name
 
 	job.JobLog.Name = "job_log"
 
@@ -38,6 +41,10 @@ func NewJob(name string, origin string) Job {
 	job.CurConfig.LocalPath = "jobs/" + name + "/"
 	job.CurConfig.SourceControl = scm.NewGit(origin, job.CurConfig.LocalPath)
 	return job
+}
+
+func (j Job) GetName() string {
+	return j.CurConfig.Name
 }
 
 func (j *Job) getLastInst() *Instance {
@@ -53,16 +60,16 @@ func (j *Job) NeedsRunning() bool {
 }
 
 func (j *Job) Run() {
-	log.Println("Running job:", j.Name)
+	log.Println("Running job:", j.GetName())
 
 	// create a new instance and start it up
-	j.History = append(j.History, NewInstance(j.CurConfig))
+	j.History = append(j.History, NewInstance(j.CurConfig, len(j.History)))
 	inst := &j.History[len(j.History)-1]
 
 	inst.Start(&j.CompletedSetup)
 	inst.EndTime = time.Now()
 
-	log.Println("Job finished:", j.Name)
+	log.Println("Job finished:", j.GetName())
 }
 
 func (j *Job) needsUpdate() bool {
@@ -71,7 +78,7 @@ func (j *Job) needsUpdate() bool {
 	if inst != nil && time.Since(inst.StartTime) < 30*time.Second {
 		return false
 	}
-	log.Println("Running needsUpdate for:", j.Name)
+	log.Println("Running needsUpdate for:", j.GetName())
 
 	shouldRun, err := j.CurConfig.SourceControl.Poll(&j.JobLog.Cmds)
 	if err != nil {

@@ -76,7 +76,7 @@ func jobHandler(w http.ResponseWriter, r *http.Request) {
 
 	jobName := mux.Vars(r)["name"]
 	for _, j := range catarang.GetJobs() {
-		if j.Name == jobName {
+		if j.GetName() == jobName {
 			root.Execute(w, &j)
 			return
 		}

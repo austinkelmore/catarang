@@ -25,7 +25,7 @@ type Catarang struct {
 func AddJob(name string, repo string) bool {
 	// names must be unique
 	for _, j := range cats.Jobs {
-		if j.Name == name {
+		if j.GetName() == name {
 			return false
 		}
 	}
@@ -40,7 +40,7 @@ func AddJob(name string, repo string) bool {
 
 func DeleteJob(jobName string) bool {
 	for i := range cats.Jobs {
-		if cats.Jobs[i].Name == jobName {
+		if cats.Jobs[i].GetName() == jobName {
 			util.ForceRemoveAll(cats.Jobs[i].CurConfig.LocalPath)
 			cats.Jobs = append(cats.Jobs[:i], cats.Jobs[i+1:]...)
 			saveConfig()
@@ -53,7 +53,7 @@ func DeleteJob(jobName string) bool {
 
 func StartJob(jobName string) {
 	for i := range cats.Jobs {
-		if cats.Jobs[i].Name == jobName {
+		if cats.Jobs[i].GetName() == jobName {
 			cats.Jobs[i].Run()
 			saveConfig()
 			break

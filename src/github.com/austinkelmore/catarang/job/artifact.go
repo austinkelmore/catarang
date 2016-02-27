@@ -2,20 +2,23 @@
 package job
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
-var localStorage = "results/"
+var destStorage = "results/"
 
 type Artifact struct {
 	ToSave string
 }
 
 // todo: akelmore - fix artifact saving to be more robust
-func (a *Artifact) Save(localRepoPath string) error {
-	err := os.MkdirAll(localStorage, 0666)
+func (a *Artifact) Save(localRepoPath string, jobName string, instNum int) error {
+	destPath := destStorage + jobName + "/" + fmt.Sprintf("%d", instNum+1) + "/" + a.ToSave
+	err := os.MkdirAll(filepath.Dir(destPath), 0666)
 	if err != nil {
 		log.Println("can't create dir structure")
 		return err
@@ -31,7 +34,6 @@ func (a *Artifact) Save(localRepoPath string) error {
 	}
 	defer src.Close()
 
-	destPath := localStorage + a.ToSave
 	dest, err := os.Create(destPath)
 	if err != nil {
 		log.Println("can't create file", destPath)

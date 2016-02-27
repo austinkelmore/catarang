@@ -10,13 +10,13 @@
 		<strong>Jobs:</strong>
 		<ul id="jobs">
 			{{ range $key, $value := . }}
-				<li id="{{$value.Name}}">
-					<a href="job/{{$value.Name}}">{{ $value.Name }}</a>
+				<li id="{{$value.CurConfig.Name}}">
+					<a href="job/{{$value.CurConfig.Name}}">{{ $value.CurConfig.Name }}</a>
 					<br>
 					Origin Repository: {{ $value.CurConfig.SourceControl.Origin }}
 					<br>
-					<button type="button" onclick="startJob('{{$value.Name}}');">Start Job</button>
-					<button type="button" onclick="deleteJob('{{$value.Name}}');">Delete Job</button>
+					<button type="button" onclick="startJob('{{$value.CurConfig.Name}}');">Start Job</button>
+					<button type="button" onclick="deleteJob('{{$value.CurConfig.Name}}');">Delete Job</button>
 				</li>
 			{{ end }}
 		</ul>

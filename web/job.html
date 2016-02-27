@@ -5,12 +5,12 @@
 	<body>
 		<script type="text/javascript" src="../static/cat.js"></script>
 		<script type="text/javascript" src="../static/job.js"></script>
-		This is the job: {{.Name}}
+		This is the job: {{.CurConfig.Name}}
 		<br><br>
 
 		<strong>Job:</strong>
-		<button type="button" onclick="startJob('{{.Name}}');">Start Job</button>
-		<button type="button" onclick="deleteJob('{{.Name}}');">Delete Job</button>
+		<button type="button" onclick="startJob('{{.CurConfig.Name}}');">Start Job</button>
+		<button type="button" onclick="deleteJob('{{.CurConfig.Name}}');">Delete Job</button>
 		<br>
 		<br>
 		<strong>Job instances output:</strong>
