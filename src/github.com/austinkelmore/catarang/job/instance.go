@@ -30,6 +30,7 @@ type Instance struct {
 	Config       Config
 	BuildCommand BuildCommand
 	Status       Status
+	Artifacts    Artifact
 	Log          []ulog.Job
 }
 
@@ -102,6 +103,16 @@ func (i *Instance) Start(completedSetup *bool) {
 		cmd.Cmd.Dir = i.Config.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
 			i.fail("Error running exec command.")
+			return
+		}
+	}
+
+	// todo: akelmore - make artifacts part of the array of things
+	log.Printf("artifacts: %+v\n", i.BuildCommand.Artifacts)
+	for _, artifact := range i.BuildCommand.Artifacts {
+		if err := artifact.Save(i.Config.SourceControl.LocalRepoPath()); err != nil {
+			log.Printf("Error saving artifact. %s\n", artifact.ToSave)
+			i.fail("Error saving artifact.")
 			return
 		}
 	}
