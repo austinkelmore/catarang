@@ -14,6 +14,18 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/hashicorp/go-plugin",
+			"repository": "https://github.com/hashicorp/go-plugin",
+			"revision": "cccb4a1328abbb89898f3ecf4311a05bddc4de6d",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/hashicorp/yamux",
+			"repository": "https://github.com/hashicorp/yamux",
+			"revision": "df949784da9ed028ee76df44652e42d37a09d7e4",
+			"branch": "master"
+		},
+		{
 			"importpath": "golang.org/x/net/websocket",
 			"repository": "https://go.googlesource.com/net",
 			"revision": "0cb26f788dd4625d1956c6fd97ffc4c90669d129",
