@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/austinkelmore/catarang/remove"
 	"github.com/austinkelmore/catarang/scm"
 	"github.com/austinkelmore/catarang/ulog"
-	"github.com/austinkelmore/catarang/util"
 )
 
 // TestMain is the entry point for this file's tests
@@ -22,12 +22,12 @@ func TestMain(m *testing.M) {
 var localPath = "../tests/"
 
 func cleanUpTests() {
-	util.ForceRemoveAll(localPath)
+	remove.ForceRemoveAll(localPath)
 }
 
 func initRepo(t *testing.T, origin string) error {
 	// clear out the origin if it exists and start from scratch
-	err := util.ForceRemoveAll(origin)
+	err := remove.ForceRemoveAll(origin)
 	if err != nil {
 		t.Logf("Error removing files: %s\n", err.Error())
 		return err
@@ -87,7 +87,7 @@ func createTestRepo(t *testing.T, origin string) error {
 
 func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) {
 	// start the clone from scratch as well
-	err := util.ForceRemoveAll(clone)
+	err := remove.ForceRemoveAll(clone)
 	if err != nil {
 		t.Errorf("Error removing files. %s\n", err.Error())
 		return nil, err
