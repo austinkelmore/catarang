@@ -4,13 +4,13 @@
 		{
 			"importpath": "github.com/gorilla/context",
 			"repository": "https://github.com/gorilla/context",
-			"revision": "1c83b3eabd45b6d76072b66b746c20815fb2872d",
+			"revision": "aed02d124ae4a0e94fea4541c8effd05bf0c8296",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/gorilla/mux",
 			"repository": "https://github.com/gorilla/mux",
-			"revision": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b",
+			"revision": "9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e",
 			"branch": "master"
 		},
 		{
@@ -28,7 +28,7 @@
 		{
 			"importpath": "golang.org/x/net/websocket",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "0cb26f788dd4625d1956c6fd97ffc4c90669d129",
+			"revision": "f841c39de738b1d0df95b5a7187744f0e03d8112",
 			"branch": "master",
 			"path": "/websocket"
 		}
