@@ -16,13 +16,13 @@
 		{
 			"importpath": "github.com/hashicorp/go-plugin",
 			"repository": "https://github.com/hashicorp/go-plugin",
-			"revision": "cccb4a1328abbb89898f3ecf4311a05bddc4de6d",
+			"revision": "8cf118f7a2f0c7ef1c82f66d4f6ac77c7e27dc12",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/hashicorp/yamux",
 			"repository": "https://github.com/hashicorp/yamux",
-			"revision": "df949784da9ed028ee76df44652e42d37a09d7e4",
+			"revision": "badf81fca035b8ebac61b5ab83330b72541056f4",
 			"branch": "master"
 		},
 		{
