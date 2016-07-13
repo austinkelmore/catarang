@@ -107,8 +107,6 @@ func (i *Instance) Start(completedSetup *bool) {
 		}
 	}
 
-	// todo: akelmore - make artifacts part of the array of things
-	log.Printf("artifacts: %+v\n", i.BuildCommand.Artifacts)
 	for _, artifact := range i.BuildCommand.Artifacts {
 		if err := artifact.Save(i.JobConfig.SourceControl.LocalRepoPath(), i.JobConfig.Name, i.Num); err != nil {
 			log.Printf("Error saving artifact. %s\n", artifact.ToSave)

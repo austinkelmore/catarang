@@ -11,13 +11,13 @@ import (
 )
 
 func main() {
+	log.Println("Running Catarang!")
 	if len(os.Args) >= 2 && os.Args[1] != "" {
 		greeter.ClientPluginStart()
 		return
 	}
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.Println("Running Catarang!")
 	catarang.ReadInConfig()
 
 	r := web.CreateRoutes()
