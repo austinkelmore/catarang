@@ -98,7 +98,6 @@ func (i *Instance) Start(completedSetup *bool) {
 
 	fields := strings.Fields(i.BuildCommand.ExecCommand)
 	if len(fields) > 0 {
-		// todo: akelmore - make sure that fields has more than one field before trying to access it
 		cmd := logger.Cmds.New(fields[0], fields[1:]...)
 		cmd.Cmd.Dir = i.JobConfig.SourceControl.LocalRepoPath()
 		if err := cmd.Run(); err != nil {
