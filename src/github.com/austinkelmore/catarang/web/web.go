@@ -32,9 +32,9 @@ func CreateRoutes() *mux.Router {
 func addJobHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	repo := r.FormValue("repo")
-	added := catarang.AddJob(name, repo)
-	if !added {
-		http.Error(w, "Name already exists for a job.", http.StatusConflict)
+	err := catarang.AddJob(name, repo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
 

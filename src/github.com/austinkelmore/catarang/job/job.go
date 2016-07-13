@@ -21,10 +21,11 @@ type Config struct {
 // Job is the way in which you can run commands on the server or nodes
 // it's the main reason this whole build system is created - to run jobs
 type Job struct {
-	CurConfig Config
-	Enabled   bool
-	JobLog    ulog.Job // log for the job outside of instances of it being run (used for polling)
-	History   []Instance
+	Enabled bool
+	JobLog  ulog.Job // log for the job outside of instances of it being run (used for polling)
+	History []Instance
+
+	JobConfig Config
 
 	// todo: akelmore - move CompletedSetup to a global space for the individual plugin
 	CompletedSetup bool
@@ -33,18 +34,19 @@ type Job struct {
 // NewJob creates a new job and initializes it with necessary values
 func NewJob(name string, origin string) Job {
 	job := Job{Enabled: true, CompletedSetup: false}
-	job.CurConfig.Name = name
+	job.JobConfig.Name = name
 
 	job.JobLog.Name = "job_log"
 
 	// todo: akelmore - configure local path
-	job.CurConfig.LocalPath = "jobs/" + name + "/"
-	job.CurConfig.SourceControl = scm.NewGit(origin, job.CurConfig.LocalPath)
+	job.JobConfig.LocalPath = "jobs/" + name + "/"
+	job.JobConfig.SourceControl = scm.NewGit(origin, job.JobConfig.LocalPath)
+
 	return job
 }
 
 func (j Job) GetName() string {
-	return j.CurConfig.Name
+	return j.JobConfig.Name
 }
 
 func (j *Job) getLastInst() *Instance {
@@ -55,34 +57,15 @@ func (j *Job) getLastInst() *Instance {
 	return &j.History[len(j.History)-1]
 }
 
-func (j *Job) NeedsRunning() bool {
-	return len(j.History) == 0 || j.needsUpdate()
-}
-
 func (j *Job) Run() {
 	log.Println("Running job:", j.GetName())
 
 	// create a new instance and start it up
-	j.History = append(j.History, NewInstance(j.CurConfig, len(j.History)))
+	j.History = append(j.History, NewInstance(j.JobConfig, len(j.History)))
 	inst := &j.History[len(j.History)-1]
 
 	inst.Start(&j.CompletedSetup)
 	inst.EndTime = time.Now()
 
 	log.Println("Job finished:", j.GetName())
-}
-
-func (j *Job) needsUpdate() bool {
-	inst := j.getLastInst()
-	// todo: akelmore - specify polling interval in config value
-	if inst != nil && time.Since(inst.StartTime) < 30*time.Second {
-		return false
-	}
-	log.Println("Running needsUpdate for:", j.GetName())
-
-	shouldRun, err := j.CurConfig.SourceControl.Poll(&j.JobLog.Cmds)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	return shouldRun
 }

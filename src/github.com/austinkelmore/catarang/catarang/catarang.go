@@ -2,6 +2,7 @@ package catarang
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 
@@ -22,11 +23,11 @@ type Catarang struct {
 	jobsConns []*websocket.Conn
 }
 
-func AddJob(name string, repo string) bool {
+func AddJob(name string, repo string) error {
 	// names must be unique
 	for _, j := range cats.Jobs {
 		if j.GetName() == name {
-			return false
+			return errors.New("A job with the name \"%s\" already exists. Names must be unique.")
 		}
 	}
 
@@ -34,14 +35,13 @@ func AddJob(name string, repo string) bool {
 	cats.Jobs = append(cats.Jobs, job)
 	saveConfig()
 	log.Println("Added job: ", name)
-
-	return true
+	return nil
 }
 
 func DeleteJob(jobName string) bool {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == jobName {
-			remove.ForceRemoveAll(cats.Jobs[i].CurConfig.LocalPath)
+			remove.ForceRemoveAll(cats.Jobs[i].JobConfig.LocalPath)
 			cats.Jobs = append(cats.Jobs[:i], cats.Jobs[i+1:]...)
 			saveConfig()
 			log.Println("Deleted job: ", jobName)
