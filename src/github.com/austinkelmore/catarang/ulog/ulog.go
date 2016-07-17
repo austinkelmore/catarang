@@ -52,25 +52,21 @@ func (c *Cmd) Run() error {
 	return c.Cmd.Run()
 }
 
-type CmdList []Cmd
+type StepLog struct {
+	Name       string
+	WorkingDir string
+	Cmds       []Cmd
+}
 
-func (c *CmdList) New(name string, arg ...string) *Cmd {
-	*c = append(*c, Cmd{})
-	cmd := &(*c)[len(*c)-1]
+func (s *StepLog) New(name string, arg ...string) *Cmd {
+	s.Cmds = append(s.Cmds, Cmd{})
+	cmd := &s.Cmds[len(s.Cmds)-1]
 	cmd.Out = CmdWriter{cmd: cmd, Src: CmdTypeOut}
 	cmd.Err = CmdWriter{cmd: cmd, Src: CmdTypeErr}
 	cmd.Cmd = exec.Command(name, arg...)
+	cmd.Cmd.Dir = s.WorkingDir
 	cmd.Cmd.Stdout = &cmd.Out
 	cmd.Cmd.Stderr = &cmd.Err
+
 	return cmd
-}
-
-type Job struct {
-	Name string
-	Cmds CmdList
-}
-
-func NewJob(name string) *Job {
-	j := Job{Name: name}
-	return &j
 }

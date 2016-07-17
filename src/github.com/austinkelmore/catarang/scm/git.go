@@ -8,10 +8,10 @@ import (
 )
 
 // NewGit Creates the git handler
-func NewGit(origin string, localPath string) *Git {
+func NewGit(origin string) *Git {
 	// todo: akelmore - extract out email and username
 	return &Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
-		LocalRepo: localPath, Origin: origin}
+		Origin: origin}
 }
 
 // Authentication authentication info for the git handler
@@ -22,14 +22,15 @@ type Authentication struct {
 
 // Git The git handler
 type Git struct {
-	Auth      Authentication
-	LocalRepo string
-	Origin    string
+	Auth   Authentication
+	Origin string
+
+	CompletedSetup bool
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
-func (g Git) FirstTimeSetup(cmds *ulog.CmdList) error {
-	cmd := cmds.New("git", "clone", g.Origin, g.LocalRepo)
+func (g Git) FirstTimeSetup(logger *ulog.StepLog) error {
+	cmd := logger.New("git", "clone", g.Origin, ".")
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error doing first time setup for: " + g.Origin)
 	}
@@ -38,13 +39,13 @@ func (g Git) FirstTimeSetup(cmds *ulog.CmdList) error {
 }
 
 // Poll polls the git master to see if the local repository is different from the master's head
-func (g *Git) Poll(cmds *ulog.CmdList) (bool, error) {
-	lsremote := cmds.New("git", "-C", g.LocalRepo, "ls-remote", "origin", "-h", "HEAD")
+func (g *Git) Poll(logger *ulog.StepLog) (bool, error) {
+	lsremote := logger.New("git", "ls-remote", "origin", "-h", "HEAD")
 	if err := lsremote.Run(); err != nil {
 		return false, errors.New("Error polling head of origin repo: " + err.Error())
 	}
 
-	revparse := cmds.New("git", "-C", g.LocalRepo, "rev-parse", "HEAD")
+	revparse := logger.New("git", "rev-parse", "HEAD")
 	if err := revparse.Run(); err != nil {
 		return false, errors.New("Error finding head of local repo: " + err.Error())
 	}
@@ -60,8 +61,8 @@ func (g *Git) Poll(cmds *ulog.CmdList) (bool, error) {
 }
 
 // UpdateExisting syncs the git repository
-func (g *Git) UpdateExisting(cmds *ulog.CmdList) error {
-	cmd := cmds.New("git", "-C", g.LocalRepo, "pull")
+func (g *Git) UpdateExisting(logger *ulog.StepLog) error {
+	cmd := logger.New("git", "pull")
 	if err := cmd.Run(); err != nil {
 		return errors.New("Error pulling git.")
 	}
@@ -69,7 +70,20 @@ func (g *Git) UpdateExisting(cmds *ulog.CmdList) error {
 	return nil
 }
 
-// LocalRepoPath returns the local path to the repository
-func (g *Git) LocalRepoPath() string {
-	return g.LocalRepo
+func (g *Git) Run(logger *ulog.StepLog) bool {
+	if g.CompletedSetup == false {
+		if err := g.FirstTimeSetup(logger); err != nil {
+			return false
+		}
+		g.CompletedSetup = true
+	} else {
+		if err := g.UpdateExisting(logger); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (g Git) GetName() string {
+	return "git Plugin"
 }

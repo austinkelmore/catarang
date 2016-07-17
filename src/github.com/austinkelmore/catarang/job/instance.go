@@ -1,13 +1,12 @@
 package job
 
 import (
-	"encoding/json"
-	"errors"
-	"io/ioutil"
 	"log"
-	"strings"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/austinkelmore/catarang/step"
 	"github.com/austinkelmore/catarang/ulog"
 )
 
@@ -23,97 +22,67 @@ const (
 	SUCCESSFUL
 )
 
+type JobStep struct {
+	Log    ulog.StepLog
+	Action step.Runner
+}
+
 // Instance a single run of a job
 type Instance struct {
-	StartTime    time.Time
-	EndTime      time.Time
-	Num          int
-	JobConfig    Config
-	BuildCommand BuildCommand
-	Status       Status
-	Artifacts    Artifact
-	Log          []ulog.Job
+	StartTime time.Time
+	EndTime   time.Time
+	Num       int
+	JobConfig Config
+
+	Steps []JobStep
+
+	Status    Status
+	Artifacts Artifact
 }
 
 // NewInstance Creates a new instance of a job (and copies off the current config)
 // and starts the instance running
 func NewInstance(config Config, instanceNum int) Instance {
 	inst := Instance{StartTime: time.Now(), Status: RUNNING, JobConfig: config, Num: instanceNum}
-	return inst
-}
 
-func (i *Instance) appendLog(name string) *ulog.Job {
-	i.Log = append(i.Log, *ulog.NewJob(name))
-	return &i.Log[len(i.Log)-1]
+	for _, s := range inst.JobConfig.Steps {
+		jobStep := JobStep{Action: s.Action}
+		jobStep.Log.Name = s.Name
+		inst.Steps = append(inst.Steps, jobStep)
+	}
+	return inst
 }
 
 func (i *Instance) fail(reason string) {
 	i.Status = FAILED
 }
 
-// todo: akelmore - do i still need to update the build command before starting every time? should i only do it sometimes or not at all?
-func (i *Instance) updateBuildCommand() error {
-	// read in the config file's build command
-	path := i.JobConfig.BuildConfigPath
-	if path == "" {
-		path = ".catarang.json"
-	}
-
-	file, err := ioutil.ReadFile(i.JobConfig.SourceControl.LocalRepoPath() + path)
-	if err != nil {
-		return errors.New("Error reading build config file: " + path)
-	}
-	err = json.Unmarshal(file, &i.BuildCommand)
-	if err != nil {
-		return errors.New("Error reading JSON from build config file: " + path)
-	}
-
-	return nil
-}
-
 // Start Entry point for the instance
 // todo: akelmore - i don't like passing a bool for the completedSetup, figure something better out
-func (i *Instance) Start(completedSetup *bool) {
-	// todo: akelmore - make jobs have an array of "things" to do rather than hard code scm stuff first
-	if !*completedSetup {
-		logger := i.appendLog("git - initial setup")
-		if err := i.JobConfig.SourceControl.FirstTimeSetup(&logger.Cmds); err != nil {
-			i.fail(err.Error())
-			return
-		}
-		*completedSetup = true
-	} else {
-		logger := i.appendLog("git - sync")
-		if err := i.JobConfig.SourceControl.UpdateExisting(&logger.Cmds); err != nil {
-			i.fail(err.Error())
-			return
-		}
-	}
+func (i *Instance) Start() {
 
-	logger := i.appendLog("cmd")
-	if err := i.updateBuildCommand(); err != nil {
-		i.fail("Error updating build command from config file.")
-		return
-	}
+	// todo: akelmore - handle folder creation error
+	os.MkdirAll(i.JobConfig.LocalPath, 0777)
 
-	fields := strings.Fields(i.BuildCommand.ExecCommand)
-	if len(fields) > 0 {
-		cmd := logger.Cmds.New(fields[0], fields[1:]...)
-		cmd.Cmd.Dir = i.JobConfig.SourceControl.LocalRepoPath()
-		if err := cmd.Run(); err != nil {
-			i.fail("Error running exec command.")
+	for index, _ := range i.Steps {
+		// todo: akelmore - handle filepath error
+		path, _ := filepath.Abs(i.JobConfig.LocalPath)
+		i.Steps[index].Log.WorkingDir = path
+		if i.Steps[index].Action.Run(&i.Steps[index].Log) == false {
+			log.Printf("FAILED! %+v\n", i.Steps[index].Log)
+			i.fail("Runner failed.")
 			return
 		}
 	}
 
-	for _, artifact := range i.BuildCommand.Artifacts {
-		if err := artifact.Save(i.JobConfig.SourceControl.LocalRepoPath(), i.JobConfig.Name, i.Num); err != nil {
-			log.Printf("Error saving artifact. %s\n", artifact.ToSave)
-			i.fail("Error saving artifact.")
-			return
-		}
-	}
+	// todo: akelmore - make artifacting a step
+	// for _, artifact := range i.BuildCommand.Artifacts {
+	// 	if err := artifact.Save(i.JobConfig.Name, i.Num); err != nil {
+	// 		log.Printf("Error saving artifact. %s\n", artifact.ToSave)
+	// 		i.fail("Error saving artifact.")
+	// 		return
+	// 	}
+	// }
 
-	log.Println("Success running exec command!")
 	i.Status = SUCCESSFUL
 }

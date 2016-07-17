@@ -93,9 +93,10 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 		return nil, err
 	}
 
-	git := scm.NewGit(origin, clone)
-	logger := ulog.NewJob("test")
-	err = git.FirstTimeSetup(&logger.Cmds)
+	git := scm.NewGit(origin)
+	logger := ulog.StepLog{}
+	logger.WorkingDir = clone
+	err = git.FirstTimeSetup(&logger)
 	return git, err
 }
 
@@ -131,10 +132,11 @@ func TestGitExists(t *testing.T) {
 }
 
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.NewGit("bogus_repo_path/", localPath+"FirstTimeSetupFail/")
+	git := scm.NewGit("bogus_repo_path/")
 
-	logger := ulog.NewJob("test")
-	err := git.FirstTimeSetup(&logger.Cmds)
+	logger := ulog.StepLog{}
+	logger.WorkingDir = localPath + "FirstTimeSetupFail/"
+	err := git.FirstTimeSetup(&logger)
 	if err == nil {
 		t.Error("Expected failure for bogus repo path. No error returned.")
 	}
@@ -149,8 +151,9 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	logger := ulog.NewJob("test")
-	shouldRun, err := git.Poll(&logger.Cmds)
+	logger := ulog.StepLog{}
+	logger.WorkingDir = testrepo
+	shouldRun, err := git.Poll(&logger)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
@@ -160,7 +163,7 @@ func TestSetupPollAndSync(t *testing.T) {
 
 	syncBackOneRev(t, testrepo)
 
-	shouldRun, err = git.Poll(&logger.Cmds)
+	shouldRun, err = git.Poll(&logger)
 	if err != nil {
 		t.Errorf("Error polling. %s\n", err.Error())
 	}
@@ -168,38 +171,26 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error("Expected to have to run. Should NOT be fully synced.")
 	}
 
-	if err = git.UpdateExisting(&logger.Cmds); err != nil {
+	if err = git.UpdateExisting(&logger); err != nil {
 		t.Errorf("Should have been able to update git repo.\n%s\n", err.Error())
 	}
-	git.LocalRepo = "bogus_repo_path"
+	logger.WorkingDir = "bogus_repo_path"
 
 	// todo: akelmore - fix polling tests
 	// Poll does two commands on the local repo, i know how to test
 	// the first one, but figure out how to test the failure of the second
 	// one (how does rev-parse fail)
 
-	if err = git.UpdateExisting(&logger.Cmds); err == nil {
+	if err = git.UpdateExisting(&logger); err == nil {
 		t.Error("Should not be able to update bogus local repo.")
 	}
 
-	if _, err = git.Poll(&logger.Cmds); err == nil {
+	if _, err = git.Poll(&logger); err == nil {
 		t.Error("Should not be able to poll bogus local repo.")
 	}
 	git.Origin = "bogus_repo_path"
-	if _, err = git.Poll(&logger.Cmds); err == nil {
+	if _, err = git.Poll(&logger); err == nil {
 		t.Error("Should not be able to poll bogus origin repo.")
-	}
-}
-
-func TestLocalRepoPath(t *testing.T) {
-	git, err := setupBothRepos(t, localPath+"LocalRepoPathOrigin/", localPath+"LocalRepoPath/")
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
-
-	if git.LocalRepo != git.LocalRepoPath() {
-		t.Error("LocalRepo isn't the same as LocalRepoPath()")
 	}
 }
 
@@ -214,8 +205,9 @@ func TestPollEmpty(t *testing.T) {
 	}
 
 	// todo: akelmore - do we want to be able to poll an empty repository?
-	logger := ulog.NewJob("test")
-	shouldRun, err := git.Poll(&logger.Cmds)
+	logger := ulog.StepLog{}
+	logger.WorkingDir = clone
+	shouldRun, err := git.Poll(&logger)
 	if err == nil {
 		t.Error("Should not be able to poll an empty repository.")
 	}

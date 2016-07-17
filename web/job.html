@@ -17,10 +17,10 @@
 		<ol id="console_log">
 			{{ range $index, $instance := .History }}
 				<li id="{{$index}}">
-					{{range $jLog := $instance.Log}}
-						Job section: {{$jLog.Name}}
+					{{range $jStep := $instance.Steps}}
+						Job section: {{$jStep.Log.Name}}
 						<br>
-						{{range $cmd := $jLog.Cmds}}
+						{{range $cmd := $jStep.Log.Cmds}}
 							+ {{$cmd.Cmd.Args}}
 							<br>
 							&nbsp&nbsp&nbsp&nbsp{{$cmd.Str}}

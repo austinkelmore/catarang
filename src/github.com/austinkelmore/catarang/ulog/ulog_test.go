@@ -8,8 +8,8 @@ import (
 func TestEcho(t *testing.T) {
 	output := "worked"
 
-	j := NewJob("test")
-	cmd := j.Cmds.New("echo", output)
+	j := StepLog{}
+	cmd := j.New("echo", output)
 	if err := cmd.Run(); err != nil {
 		t.Error(err)
 	}

@@ -1,3 +1,5 @@
 {
-	"ExecCommand": "gb build"
+  "ExecCommand": [
+    "gb build"
+  ]
 }
