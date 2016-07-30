@@ -5,9 +5,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/austinkelmore/catarang/job"
-	"github.com/austinkelmore/catarang/remove"
 	"golang.org/x/net/websocket"
 )
 
@@ -41,7 +41,7 @@ func AddJob(name string, repo string) error {
 func DeleteJob(jobName string) bool {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == jobName {
-			remove.ForceRemoveAll(cats.Jobs[i].JobConfig.LocalPath)
+			os.RemoveAll(cats.Jobs[i].JobConfig.LocalPath)
 			cats.Jobs = append(cats.Jobs[:i], cats.Jobs[i+1:]...)
 			saveConfig()
 			log.Println("Deleted job: ", jobName)
