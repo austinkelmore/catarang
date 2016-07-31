@@ -1,4 +1,4 @@
-package step
+package plugin
 
 import "github.com/austinkelmore/catarang/ulog"
 

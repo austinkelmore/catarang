@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/austinkelmore/catarang/scm"
+	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/ulog"
 )
 
@@ -84,7 +84,7 @@ func createTestRepo(t *testing.T, origin string) error {
 	return nil
 }
 
-func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) {
+func setupGitClone(t *testing.T, origin string, clone string) (*plugin.Git, error) {
 	// start the clone from scratch as well
 	err := os.RemoveAll(clone)
 	if err != nil {
@@ -92,14 +92,14 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 		return nil, err
 	}
 
-	git := scm.NewGit(origin)
+	git := plugin.NewGit(origin)
 	logger := ulog.StepLog{}
 	logger.WorkingDir = clone
 	err = git.FirstTimeSetup(&logger)
 	return git, err
 }
 
-func setupBothRepos(t *testing.T, origin string, clone string) (*scm.Git, error) {
+func setupBothRepos(t *testing.T, origin string, clone string) (*plugin.Git, error) {
 	err := createTestRepo(t, origin)
 	if err != nil {
 		t.Error(err)
@@ -131,7 +131,7 @@ func TestGitExists(t *testing.T) {
 }
 
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.NewGit("bogus_repo_path/")
+	git := plugin.NewGit("bogus_repo_path/")
 
 	logger := ulog.StepLog{}
 	logger.WorkingDir = localPath + "FirstTimeSetupFail/"

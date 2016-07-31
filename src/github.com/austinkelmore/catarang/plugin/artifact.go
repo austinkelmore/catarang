@@ -1,5 +1,4 @@
-// todo: akelmore - move the artifact out of job?
-package job
+package plugin
 
 import (
 	"fmt"
@@ -7,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/austinkelmore/catarang/ulog"
 )
 
 var destStorage = "results/"
@@ -25,18 +26,17 @@ func (a *Artifact) Save(jobName string, instNum int) error {
 	}
 
 	// todo: akelmore - this is the completely wrong thing to do for artifact saving, but it's a good prototype
-	// fixup later
 	srcPath := a.ToSave
 	src, err := os.Open(srcPath)
 	if err != nil {
-		log.Println("can't open srcpath", srcPath)
+		log.Println("can't open srcPath ", srcPath)
 		return err
 	}
 	defer src.Close()
 
 	dest, err := os.Create(destPath)
 	if err != nil {
-		log.Println("can't create file", destPath)
+		log.Println("can't create file ", destPath)
 		return err
 	}
 	defer dest.Close()
@@ -47,4 +47,12 @@ func (a *Artifact) Save(jobName string, instNum int) error {
 		return err
 	}
 	return nil
+}
+
+func (a *Artifact) Run(logger *ulog.StepLog) bool {
+	return true
+}
+
+func (a Artifact) GetName() string {
+	return "artifact"
 }

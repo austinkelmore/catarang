@@ -85,5 +85,5 @@ func (g *Git) Run(logger *ulog.StepLog) bool {
 }
 
 func (g Git) GetName() string {
-	return "git Plugin"
+	return "git"
 }

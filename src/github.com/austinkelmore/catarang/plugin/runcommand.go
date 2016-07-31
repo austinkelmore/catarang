@@ -36,7 +36,7 @@ func (r *RunCommand) Run(logger *ulog.StepLog) bool {
 }
 
 func (r *RunCommand) GetName() string {
-	return "Run Command Plugin"
+	return "run command"
 }
 
 func (r *RunCommand) updateRunCommand(logger *ulog.StepLog) error {

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/austinkelmore/catarang/step"
+	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/ulog"
 )
 
@@ -14,8 +14,10 @@ import (
 type Status int
 
 const (
+	// INITIALIZED The job instance is initialized, but hasn't started running yet
+	INITIALIZED Status = iota
 	// RUNNING The job instance is currently running
-	RUNNING Status = iota
+	RUNNING
 	// FAILED The job instance failed
 	FAILED
 	// SUCCESSFUL The job instance was successful
@@ -24,7 +26,7 @@ const (
 
 type JobStep struct {
 	Log    ulog.StepLog
-	Action step.Runner
+	Action plugin.Runner
 }
 
 // Instance a single run of a job
@@ -36,14 +38,13 @@ type Instance struct {
 
 	Steps []JobStep
 
-	Status    Status
-	Artifacts Artifact
+	Status Status
 }
 
 // NewInstance Creates a new instance of a job (and copies off the current config)
 // and starts the instance running
 func NewInstance(config Config, instanceNum int) Instance {
-	inst := Instance{StartTime: time.Now(), Status: RUNNING, JobConfig: config, Num: instanceNum}
+	inst := Instance{JobConfig: config, Num: instanceNum}
 
 	for _, s := range inst.JobConfig.Steps {
 		jobStep := JobStep{Action: s.Action}
@@ -53,16 +54,18 @@ func NewInstance(config Config, instanceNum int) Instance {
 	return inst
 }
 
-func (i *Instance) fail(reason string) {
-	i.Status = FAILED
-}
-
 // Start Entry point for the instance
-// todo: akelmore - i don't like passing a bool for the completedSetup, figure something better out
 func (i *Instance) Start() {
+	i.StartTime = time.Now()
+	defer func() { i.EndTime = time.Now() }()
+	i.Status = RUNNING
 
-	// todo: akelmore - handle folder creation error
-	os.MkdirAll(i.JobConfig.LocalPath, 0777)
+	err := os.MkdirAll(i.JobConfig.LocalPath, 0777)
+	if err != nil {
+		log.Println("FAILED! Can't create directory for job: " + i.JobConfig.LocalPath)
+		i.Status = FAILED
+		return
+	}
 
 	for index, _ := range i.Steps {
 		// todo: akelmore - handle filepath error
@@ -70,7 +73,7 @@ func (i *Instance) Start() {
 		i.Steps[index].Log.WorkingDir = path
 		if i.Steps[index].Action.Run(&i.Steps[index].Log) == false {
 			log.Printf("FAILED! %+v\n", i.Steps[index].Log)
-			i.fail("Runner failed.")
+			i.Status = FAILED
 			return
 		}
 	}

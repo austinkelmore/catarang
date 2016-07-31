@@ -13,8 +13,6 @@
 				<li id="{{$value.JobConfig.Name}}">
 					<a href="job/{{$value.JobConfig.Name}}">{{ $value.JobConfig.Name }}</a>
 					<br>
-					Origin Repository: {{ $value.JobConfig.SourceControl.Origin }}
-					<br>
 					<button type="button" onclick="startJob('{{$value.JobConfig.Name}}');">Start Job</button>
 					<button type="button" onclick="deleteJob('{{$value.JobConfig.Name}}');">Delete Job</button>
 				</li>
