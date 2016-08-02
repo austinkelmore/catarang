@@ -1,7 +1,7 @@
 package job
 
 import (
-	"log"
+	"path/filepath"
 
 	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/plugin/scm"
@@ -41,9 +41,7 @@ func NewJob(name string, origin string) Job {
 	job.JobConfig.Name = name
 
 	job.JobLog.Name = "job_log"
-
-	// todo: akelmore - configure local path
-	job.JobConfig.LocalPath = "jobs/" + name + "/"
+	job.JobConfig.LocalPath = filepath.Join("jobs/", name)
 
 	job.JobConfig.Steps = append(job.JobConfig.Steps, StepData{Name: "git", Action: scm.NewGit(origin)})
 	job.JobConfig.Steps = append(job.JobConfig.Steps, StepData{Name: "run command", Action: &plugin.RunCommand{}})
@@ -57,13 +55,8 @@ func (j Job) GetName() string {
 }
 
 func (j *Job) Run() {
-	log.Println("Running job:", j.GetName())
-
-	// create a new instance and start it up
 	j.History = append(j.History, NewInstance(j.JobConfig, len(j.History)))
 	inst := &j.History[len(j.History)-1]
 
 	inst.Start()
-
-	log.Println("Job finished:", j.GetName())
 }

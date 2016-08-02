@@ -68,8 +68,12 @@ func (i *Instance) Start() {
 	}
 
 	for index, _ := range i.Steps {
-		// todo: akelmore - handle filepath error
-		path, _ := filepath.Abs(i.JobConfig.LocalPath)
+		path, err := filepath.Abs(i.JobConfig.LocalPath)
+		if err != nil {
+			log.Println("FAILED! Can't get absolute path: " + err.Error())
+			i.Status = FAILED
+			return
+		}
 		i.Steps[index].Log.WorkingDir = path
 		if i.Steps[index].Action.Run(&i.Steps[index].Log) == false {
 			log.Printf("FAILED! %+v\n", i.Steps[index].Log)
@@ -77,15 +81,6 @@ func (i *Instance) Start() {
 			return
 		}
 	}
-
-	// todo: akelmore - make artifacting a step
-	// for _, artifact := range i.BuildCommand.Artifacts {
-	// 	if err := artifact.Save(i.JobConfig.Name, i.Num); err != nil {
-	// 		log.Printf("Error saving artifact. %s\n", artifact.ToSave)
-	// 		i.fail("Error saving artifact.")
-	// 		return
-	// 	}
-	// }
 
 	i.Status = SUCCESSFUL
 }
