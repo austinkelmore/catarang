@@ -17,8 +17,6 @@ type Authentication struct {
 type Git struct {
 	Auth   Authentication
 	Origin string
-
-	CompletedSetup bool
 }
 
 // FirstTimeSetup Clone the git repository and setup the email and username
@@ -64,16 +62,10 @@ func (g *Git) UpdateExisting(logger *ulog.StepLog) error {
 }
 
 func (g *Git) Run(logger *ulog.StepLog) bool {
-	if g.CompletedSetup == false {
-		if err := g.FirstTimeSetup(logger); err != nil {
-			return false
-		}
-		g.CompletedSetup = true
-	} else {
-		if err := g.UpdateExisting(logger); err != nil {
-			return false
-		}
+	if err := g.UpdateExisting(logger); err != nil {
+		return false
 	}
+
 	return true
 }
 

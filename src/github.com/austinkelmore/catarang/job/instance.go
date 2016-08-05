@@ -42,19 +42,6 @@ type Instance struct {
 	Status Status
 }
 
-// NewInstance Creates a new instance of a job (and copies off the current config)
-// and starts the instance running
-func NewInstance(config Config, instanceNum int) Instance {
-	inst := Instance{JobConfig: config, Num: instanceNum}
-
-	for _, s := range inst.JobConfig.Steps {
-		jobStep := JobStep{Action: s.Action}
-		jobStep.Log.Name = s.Name
-		inst.Steps = append(inst.Steps, jobStep)
-	}
-	return inst
-}
-
 // Start Entry point for the instance
 func (i *Instance) Start() {
 	i.StartTime = time.Now()
@@ -76,8 +63,12 @@ func (i *Instance) Start() {
 		return
 	}
 
-	for index, _ := range i.Steps {
-		i.Steps[index].Log.WorkingDir = path
+	for index, _ := range i.JobConfig.Steps {
+		step := JobStep{Action: i.JobConfig.Steps[index].Action}
+		step.Log.Name = i.JobConfig.Steps[index].Name
+		step.Log.WorkingDir = path
+		i.Steps = append(i.Steps, step)
+
 		if i.Steps[index].Action.Run(&i.Steps[index].Log) == false {
 			log.Printf("FAILED! %+v\n", i.Steps[index].Log)
 			i.Status = FAILED

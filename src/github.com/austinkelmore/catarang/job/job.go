@@ -30,14 +30,12 @@ type Job struct {
 	History []Instance
 
 	JobConfig Config
-
-	// todo: akelmore - move CompletedSetup to a global space for the individual plugin
-	CompletedSetup bool
 }
 
 // NewJob creates a new job and initializes it with necessary values
+// todo: akelmore - this can fail if we can't get the config, relay that to the user
 func NewJob(name string, origin string) Job {
-	job := Job{CompletedSetup: false}
+	job := Job{}
 	job.JobConfig.Name = name
 	job.JobConfig.Origin = origin
 
@@ -83,7 +81,10 @@ func (j Job) GetName() string {
 }
 
 func (j *Job) Run() {
-	j.History = append(j.History, NewInstance(j.JobConfig, len(j.History)))
+	i := Instance{}
+	i.JobConfig = j.JobConfig
+	i.Num = len(j.History)
+	j.History = append(j.History, i)
 	inst := &j.History[len(j.History)-1]
 
 	inst.Start()
