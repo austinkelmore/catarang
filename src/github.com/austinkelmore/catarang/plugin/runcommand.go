@@ -35,8 +35,8 @@ func (r *RunCommand) Run(logger *ulog.StepLog) bool {
 	return true
 }
 
-func (r *RunCommand) GetName() string {
-	return "run command"
+func (r RunCommand) GetName() string {
+	return "runcommand"
 }
 
 func (r *RunCommand) updateRunCommand(logger *ulog.StepLog) error {

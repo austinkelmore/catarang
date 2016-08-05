@@ -26,6 +26,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/jeffail/gabs",
+			"repository": "https://github.com/jeffail/gabs",
+			"revision": "c28ac41b517d24bf381d39d5a294fac6536d81fa",
+			"branch": "master"
+		},
+		{
 			"importpath": "golang.org/x/net/websocket",
 			"repository": "https://go.googlesource.com/net",
 			"revision": "f841c39de738b1d0df95b5a7187744f0e03d8112",
