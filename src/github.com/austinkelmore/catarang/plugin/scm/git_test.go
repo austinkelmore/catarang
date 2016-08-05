@@ -92,7 +92,8 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 		return nil, err
 	}
 
-	git := scm.NewGit(origin)
+	git := &scm.Git{}
+	git.SetOrigin(origin)
 	logger := ulog.StepLog{}
 	logger.WorkingDir = clone
 	err = git.FirstTimeSetup(&logger)
@@ -131,7 +132,8 @@ func TestGitExists(t *testing.T) {
 }
 
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.NewGit("bogus_repo_path/")
+	git := scm.Git{}
+	git.SetOrigin("bogus_repo_path/")
 
 	logger := ulog.StepLog{}
 	logger.WorkingDir = localPath + "FirstTimeSetupFail/"

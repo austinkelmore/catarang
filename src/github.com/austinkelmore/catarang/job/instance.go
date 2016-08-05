@@ -33,6 +33,7 @@ type JobStep struct {
 type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
+	// todo: akelmore - move the Instance Num out of the Instance so it can't be changed (meta data on the job is a better place)
 	Num       int
 	JobConfig Config
 
@@ -60,6 +61,7 @@ func (i *Instance) Start() {
 	defer func() { i.EndTime = time.Now() }()
 	i.Status = RUNNING
 
+	// todo: akelmore - make the instance's work be captured in the job's logging
 	err := os.MkdirAll(i.JobConfig.LocalPath, 0777)
 	if err != nil {
 		log.Println("FAILED! Can't create directory for job: " + i.JobConfig.LocalPath)
@@ -67,13 +69,14 @@ func (i *Instance) Start() {
 		return
 	}
 
+	path, err := filepath.Abs(i.JobConfig.LocalPath)
+	if err != nil {
+		log.Println("FAILED! Can't get absolute path: " + err.Error())
+		i.Status = FAILED
+		return
+	}
+
 	for index, _ := range i.Steps {
-		path, err := filepath.Abs(i.JobConfig.LocalPath)
-		if err != nil {
-			log.Println("FAILED! Can't get absolute path: " + err.Error())
-			i.Status = FAILED
-			return
-		}
 		i.Steps[index].Log.WorkingDir = path
 		if i.Steps[index].Action.Run(&i.Steps[index].Log) == false {
 			log.Printf("FAILED! %+v\n", i.Steps[index].Log)

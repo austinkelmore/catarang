@@ -17,6 +17,7 @@ type Artifact struct {
 }
 
 // todo: akelmore - fix artifact saving to be more robust
+// todo: akelmore - fix artifact logging to go to the steplog
 func (a *Artifact) Save(jobName string, instNum int) error {
 	destPath := destStorage + jobName + "/" + fmt.Sprintf("%d", instNum+1) + "/" + a.ToSave
 	err := os.MkdirAll(filepath.Dir(destPath), 0777)

@@ -8,5 +8,6 @@ type SCMer interface {
 	FirstTimeSetup(logger *ulog.StepLog) error
 	Poll(logger *ulog.StepLog) (bool, error)
 	UpdateExisting(logger *ulog.StepLog) error
+	SetOrigin(origin string) error
 	plugin.Runner
 }

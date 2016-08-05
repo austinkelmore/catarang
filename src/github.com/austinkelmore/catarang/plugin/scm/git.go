@@ -7,13 +7,6 @@ import (
 	"github.com/austinkelmore/catarang/ulog"
 )
 
-// NewGit Creates the git handler
-func NewGit(origin string) *Git {
-	// todo: akelmore - extract out email and username
-	return &Git{Auth: Authentication{Email: "catarang@austinkelmore.com", Username: "catarang"},
-		Origin: origin}
-}
-
 // Authentication authentication info for the git handler
 type Authentication struct {
 	Username string
@@ -86,4 +79,9 @@ func (g *Git) Run(logger *ulog.StepLog) bool {
 
 func (g Git) GetName() string {
 	return "git"
+}
+
+func (g *Git) SetOrigin(origin string) error {
+	g.Origin = origin
+	return nil
 }
