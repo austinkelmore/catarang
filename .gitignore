@@ -1,6 +1,6 @@
-bin/
-pkg/
-jobs/
-projects/*.sublime-workspace
-catarang_config.json
-results/
+/bin/
+/pkg/
+/jobs/
+/projects/*.sublime-workspace
+/catarang_config.json
+/results/
