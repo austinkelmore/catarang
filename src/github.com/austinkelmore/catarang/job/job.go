@@ -3,13 +3,13 @@ package job
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/austinkelmore/catarang/plugin/scm"
 	"github.com/austinkelmore/catarang/ulog"
+	"github.com/pkg/errors"
 )
 
 // Config is the where a job keeps all of the necessary
@@ -34,7 +34,7 @@ type Job struct {
 
 // NewJob creates a new job and initializes it with necessary values
 // todo: akelmore - this can fail if we can't get the config, relay that to the user
-func NewJob(name string, origin string) Job {
+func NewJob(name string, origin string) (*Job, error) {
 	job := Job{}
 	job.JobConfig.Name = name
 	job.JobConfig.Origin = origin
@@ -42,38 +42,44 @@ func NewJob(name string, origin string) Job {
 	job.JobLog.Name = "job_log"
 	job.JobConfig.LocalPath = filepath.Join("jobs/", name)
 
-	job.UpdateConfig()
+	if err := job.UpdateConfig(); err != nil {
+		return nil, errors.Wrap(err, "Couldn't update the config.")
+	}
 
 	// go through and set the origin on every SCM so its aware of where we got this job from
 	for i := range job.JobConfig.Steps {
 		if scm, ok := job.JobConfig.Steps[i].Action.(scm.SCMer); ok {
-			scm.SetOrigin(origin)
+			if err := scm.SetOrigin(origin); err != nil {
+				return nil, errors.Wrapf(err, "Couldn't Set Origin on SCM %s", job.JobConfig.Steps[i].Action.GetName())
+			}
 		}
 	}
 
-	return job
+	return &job, nil
 }
 
-func (j *Job) UpdateConfig() {
+func (j *Job) UpdateConfig() error {
 	// first update the repository that this job is based on
 	// todo: akelmore - make updating the config based on what type of SCM this is instead of hard using git
 	// todo: akelmore - make updating the config use a logging that can be passed back to the job
 	cmd := exec.Command("git", "clone", j.JobConfig.Origin, j.JobConfig.LocalPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "Couldn't git clone origin \"%s\" to local path \"%s\"", j.JobConfig.Origin, j.JobConfig.LocalPath)
+	}
 
 	file := filepath.Join(j.JobConfig.LocalPath, ".catarang.json")
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		log.Printf("Error reading in \"%s\"'s config file: %s\n", j.GetName(), file)
-		return
+		return errors.Wrapf(err, "Error reading in config file \"%s\"", file)
 	}
 
 	if err = json.Unmarshal(data, &j.JobConfig); err != nil {
-		log.Println("Error reading in", file)
-		log.Println(err.Error())
+		return errors.Wrapf(err, "Error unmarshaling json from \"%s\"", file)
 	}
+
+	return nil
 }
 
 func (j Job) GetName() string {

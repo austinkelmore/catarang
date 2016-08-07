@@ -1,13 +1,13 @@
 package job
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/ulog"
+	"github.com/pkg/errors"
 )
 
 // Status The job instance's status
@@ -40,6 +40,7 @@ type Instance struct {
 	Steps []JobStep
 
 	Status Status
+	Error  error
 }
 
 // Start Entry point for the instance
@@ -48,17 +49,16 @@ func (i *Instance) Start() {
 	defer func() { i.EndTime = time.Now() }()
 	i.Status = RUNNING
 
-	// todo: akelmore - make the instance's work be captured in the job's logging
 	err := os.MkdirAll(i.JobConfig.LocalPath, 0777)
 	if err != nil {
-		log.Println("FAILED! Can't create directory for job: " + i.JobConfig.LocalPath)
+		i.Error = errors.Wrapf(err, "Can't create directory for job at path \"%s\"", i.JobConfig.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
 	path, err := filepath.Abs(i.JobConfig.LocalPath)
 	if err != nil {
-		log.Println("FAILED! Can't get absolute path: " + err.Error())
+		i.Error = errors.Wrapf(err, "Can't get absolute path from \"%s\"", i.JobConfig.LocalPath)
 		i.Status = FAILED
 		return
 	}
@@ -69,8 +69,8 @@ func (i *Instance) Start() {
 		step.Log.WorkingDir = path
 		i.Steps = append(i.Steps, step)
 
-		if i.Steps[index].Action.Run(&i.Steps[index].Log) == false {
-			log.Printf("FAILED! %+v\n", i.Steps[index].Log)
+		if err = i.Steps[index].Action.Run(&i.Steps[index].Log); err != nil {
+			i.Error = errors.Wrapf(err, "Couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
 			i.Status = FAILED
 			return
 		}

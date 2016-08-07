@@ -2,12 +2,13 @@ package job
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"reflect"
 
 	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/pluginlist"
 	"github.com/jeffail/gabs"
+	"github.com/pkg/errors"
 )
 
 type Step struct {
@@ -22,19 +23,17 @@ func (s *Step) UnmarshalJSON(b []byte) error {
 	parsed, _ := gabs.ParseJSON(b)
 	plug := parsed.Search("plugin")
 	if plug == nil {
-		log.Println("Couldn't find \"plugin\" in Step.")
-		return nil
+		return errors.New("Couldn't find \"plugin\" in Step.")
 	}
 
 	plugName, ok := plug.Data().(string)
 	if !ok {
-		log.Println("\"plugin\" was not a string in the config file.")
+		return errors.New("\"plugin\" does not reference a string.")
 	}
 
 	actionType, ok := pluginlist.Plugins()[plugName]
 	if !ok {
-		log.Printf("Couldn't find plugin of type \"%s\".\n", plugName)
-		return nil
+		return errors.New(fmt.Sprintf("Couldn't find plugin of type \"%s\" in the pluginlist. Have you added it there?.", plugName))
 	}
 
 	inter := reflect.New(actionType.Elem())
@@ -43,15 +42,13 @@ func (s *Step) UnmarshalJSON(b []byte) error {
 	// shove the data inside the config into the plugin
 	data := parsed.Search("data")
 	if data == nil {
-		log.Printf("No data blob in config associated with plugin \"%s\".\n", plugName)
-		return nil
+		return errors.New(fmt.Sprintf("No \"data\" blob associated with plugin \"%s\".", plugName))
 	}
 
 	bytes := data.Bytes()
 	err := json.Unmarshal(bytes, s.Action)
 	if err != nil {
-		log.Printf("ERROR: %s\n", err.Error())
-		return nil
+		return errors.Wrapf(err, "Couldn't Unmarshal \"data\" blob for plugin %s.", plugName)
 	}
 
 	return nil

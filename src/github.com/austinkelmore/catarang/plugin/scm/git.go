@@ -2,9 +2,9 @@ package scm
 
 import (
 	"bytes"
-	"errors"
 
 	"github.com/austinkelmore/catarang/ulog"
+	"github.com/pkg/errors"
 )
 
 // Authentication authentication info for the git handler
@@ -23,7 +23,7 @@ type Git struct {
 func (g Git) FirstTimeSetup(logger *ulog.StepLog) error {
 	cmd := logger.New("git", "clone", g.Origin, ".")
 	if err := cmd.Run(); err != nil {
-		return errors.New("Error doing first time setup for: " + g.Origin)
+		return errors.Wrapf(err, "Error trying to git clone \"%s\"", g.Origin)
 	}
 
 	return nil
@@ -33,12 +33,12 @@ func (g Git) FirstTimeSetup(logger *ulog.StepLog) error {
 func (g *Git) Poll(logger *ulog.StepLog) (bool, error) {
 	lsremote := logger.New("git", "ls-remote", "origin", "-h", "HEAD")
 	if err := lsremote.Run(); err != nil {
-		return false, errors.New("Error polling head of origin repo: " + err.Error())
+		return false, errors.Wrapf(err, "Error polling head of origin repo \"%s\" at dir \"%s\"", g.Origin, logger.WorkingDir)
 	}
 
 	revparse := logger.New("git", "rev-parse", "HEAD")
 	if err := revparse.Run(); err != nil {
-		return false, errors.New("Error finding head of local repo: " + err.Error())
+		return false, errors.Wrapf(err, "Error finding head of local repo at dir \"%s\"", logger.WorkingDir)
 	}
 
 	// empty repositories don't return any text since they have no HEAD
@@ -55,18 +55,18 @@ func (g *Git) Poll(logger *ulog.StepLog) (bool, error) {
 func (g *Git) UpdateExisting(logger *ulog.StepLog) error {
 	cmd := logger.New("git", "pull")
 	if err := cmd.Run(); err != nil {
-		return errors.New("Error pulling git.")
+		return errors.Wrapf(err, "Error pulling git at dir \"%s\"", logger.WorkingDir)
 	}
 
 	return nil
 }
 
-func (g *Git) Run(logger *ulog.StepLog) bool {
+func (g *Git) Run(logger *ulog.StepLog) error {
 	if err := g.UpdateExisting(logger); err != nil {
-		return false
+		return errors.Wrap(err, "Error running git's UpdateExisting")
 	}
 
-	return true
+	return nil
 }
 
 func (g Git) GetName() string {

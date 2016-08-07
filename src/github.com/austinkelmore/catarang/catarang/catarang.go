@@ -2,12 +2,13 @@ package catarang
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/austinkelmore/catarang/job"
+	"github.com/pkg/errors"
 	"golang.org/x/net/websocket"
 )
 
@@ -18,21 +19,25 @@ func init() {
 }
 
 type Catarang struct {
-	Jobs      []job.Job
-	conns     map[string][]*websocket.Conn
-	jobsConns []*websocket.Conn
+	Jobs     []job.Job
+	conns    map[string][]*websocket.Conn
+	jobConns []*websocket.Conn
 }
 
 func AddJob(name string, repo string) error {
 	// names must be unique
 	for _, j := range cats.Jobs {
 		if j.GetName() == name {
-			return errors.New("A job with the name \"%s\" already exists. Names must be unique.")
+			return errors.New(fmt.Sprintf("A job with the name \"%s\" already exists. Job names must be unique.", name))
 		}
 	}
 
-	job := job.NewJob(name, repo)
-	cats.Jobs = append(cats.Jobs, job)
+	job, err := job.NewJob(name, repo)
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't create job %s", name)
+	}
+
+	cats.Jobs = append(cats.Jobs, *job)
 	saveConfig()
 	log.Println("Added job: ", name)
 	return nil
@@ -66,7 +71,7 @@ func GetJobs() []job.Job {
 }
 
 func AddJobsConn(ws *websocket.Conn) {
-	cats.jobsConns = append(cats.jobsConns, ws)
+	cats.jobConns = append(cats.jobConns, ws)
 }
 
 func AddJobConn(jobName string, ws *websocket.Conn) {
@@ -74,7 +79,7 @@ func AddJobConn(jobName string, ws *websocket.Conn) {
 }
 
 func SendToJobsConns(data interface{}) {
-	for _, conn := range cats.jobsConns {
+	for _, conn := range cats.jobConns {
 		if err := websocket.JSON.Send(conn, data); err != nil {
 			log.Printf("Error sending websocket: %s\n", err.Error())
 		}
@@ -94,17 +99,18 @@ var configFileName = "catarang_config.json"
 // todo: akelmore - fix threading with the reading/writing of the config
 func ReadInConfig() {
 	data, err := ioutil.ReadFile(configFileName)
-	if err == nil {
-		if err = json.Unmarshal(data, &cats); err != nil {
-			log.Println("Error reading in", configFileName)
-			log.Println(err.Error())
-		}
+	if err != nil {
+		// todo: akelmore - before trying to create a new config, make sure the read didn't fail for some other reason than it doesn't exist
+		// create a new config and save it out
+		log.Println("No Catarang config detected, creating new one.")
+		saveConfig()
 		return
 	}
 
-	// create a new config and save it out
-	log.Println("No Catarang config detected, creating new one.")
-	saveConfig()
+	if err = json.Unmarshal(data, &cats); err != nil {
+		log.Println("Error reading in", configFileName)
+		log.Println(err.Error())
+	}
 }
 
 func saveConfig() {
