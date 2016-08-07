@@ -2,7 +2,6 @@ package job
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/austinkelmore/catarang/plugin"
@@ -33,7 +32,7 @@ func (s *Step) UnmarshalJSON(b []byte) error {
 
 	actionType, ok := pluginlist.Plugins()[plugName]
 	if !ok {
-		return errors.New(fmt.Sprintf("Couldn't find plugin of type \"%s\" in the pluginlist. Have you added it there?.", plugName))
+		return errors.Errorf("Couldn't find plugin of type \"%s\" in the pluginlist. Have you added it there?.", plugName)
 	}
 
 	inter := reflect.New(actionType.Elem())
@@ -42,7 +41,7 @@ func (s *Step) UnmarshalJSON(b []byte) error {
 	// shove the data inside the config into the plugin
 	data := parsed.Search("data")
 	if data == nil {
-		return errors.New(fmt.Sprintf("No \"data\" blob associated with plugin \"%s\".", plugName))
+		return errors.Errorf("No \"data\" blob associated with plugin \"%s\".", plugName)
 	}
 
 	bytes := data.Bytes()

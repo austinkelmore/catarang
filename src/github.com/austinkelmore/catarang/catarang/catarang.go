@@ -2,7 +2,6 @@ package catarang
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,7 +27,7 @@ func AddJob(name string, repo string) error {
 	// names must be unique
 	for _, j := range cats.Jobs {
 		if j.GetName() == name {
-			return errors.New(fmt.Sprintf("A job with the name \"%s\" already exists. Job names must be unique.", name))
+			return errors.Errorf("A job with the name \"%s\" already exists. Job names must be unique.", name)
 		}
 	}
 
