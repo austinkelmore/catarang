@@ -32,6 +32,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/pkg/errors",
+			"repository": "https://github.com/pkg/errors",
+			"revision": "2a9be18ecd8c148be18be08a811e33809206da19",
+			"branch": "master"
+		},
+		{
 			"importpath": "golang.org/x/net/websocket",
 			"repository": "https://go.googlesource.com/net",
 			"revision": "f841c39de738b1d0df95b5a7187744f0e03d8112",

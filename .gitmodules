@@ -1,6 +1,0 @@
-[submodule "vendor/src/github.com/hashicorp/go-plugin"]
-	path = vendor/src/github.com/hashicorp/go-plugin
-	url = https://github.com/hashicorp/go-plugin
-[submodule "vendor/src/github.com/hashicorp/yamux"]
-	path = vendor/src/github.com/hashicorp/yamux
-	url = https://github.com/hashicorp/yamux
