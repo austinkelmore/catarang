@@ -18,8 +18,6 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	catarang.ReadInConfig()
 
-	catarang.AddJob("ping_test", "../ping_test")
-
 	r := web.CreateRoutes()
 	http.Handle("/", r)
 
