@@ -10,11 +10,11 @@
 		<strong>Jobs:</strong>
 		<ul id="jobs">
 			{{ range $key, $value := . }}
-				<li id="{{$value.JobConfig.Name}}">
-					<a href="job/{{$value.JobConfig.Name}}">{{ $value.JobConfig.Name }}</a>
+				<li id="{{$value.JobConfig.Data.Name}}">
+					<a href="job/{{$value.JobConfig.Data.Name}}">{{ $value.JobConfig.Data.Name }}</a>
 					<br>
-					<button type="button" onclick="startJob('{{$value.JobConfig.Name}}');">Start Job</button>
-					<button type="button" onclick="deleteJob('{{$value.JobConfig.Name}}');">Delete Job</button>
+					<button type="button" onclick="startJob('{{$value.JobConfig.Data.Name}}');">Start Job</button>
+					<button type="button" onclick="deleteJob('{{$value.JobConfig.Data.Name}}');">Delete Job</button>
 				</li>
 			{{ end }}
 		</ul>

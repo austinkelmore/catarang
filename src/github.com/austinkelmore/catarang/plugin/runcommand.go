@@ -3,6 +3,7 @@ package plugin
 import (
 	"strings"
 
+	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
@@ -11,7 +12,7 @@ type RunCommand struct {
 	Commands []string
 }
 
-func (r *RunCommand) Run(logger *ulog.StepLog) error {
+func (r *RunCommand) Run(job jobdata.Data, logger *ulog.StepLog) error {
 	for _, cmd := range r.Commands {
 		fields := strings.Fields(cmd)
 		if len(fields) > 0 {

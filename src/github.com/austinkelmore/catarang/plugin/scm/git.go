@@ -3,6 +3,7 @@ package scm
 import (
 	"bytes"
 
+	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
@@ -61,7 +62,7 @@ func (g *Git) UpdateExisting(logger *ulog.StepLog) error {
 	return nil
 }
 
-func (g *Git) Run(logger *ulog.StepLog) error {
+func (g *Git) Run(job jobdata.Data, logger *ulog.StepLog) error {
 	if err := g.UpdateExisting(logger); err != nil {
 		return errors.Wrap(err, "Error running git's UpdateExisting")
 	}

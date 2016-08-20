@@ -15,11 +15,12 @@ type Step struct {
 	Name   string
 }
 
-// todo: akelmore - return the correct errors instead of returning nil
-// todo: akelmore - handle logging so it can be returned back to the job
 func (s *Step) UnmarshalJSON(b []byte) error {
-	// todo: akelmore - handle parse error
-	parsed, _ := gabs.ParseJSON(b)
+	parsed, err := gabs.ParseJSON(b)
+	if err != nil {
+		return errors.Wrap(err, "Error parsing JSON while unmarshaling it.")
+	}
+
 	plug := parsed.Search("plugin")
 	if plug == nil {
 		return errors.New("Couldn't find \"plugin\" in Step.")
@@ -45,7 +46,7 @@ func (s *Step) UnmarshalJSON(b []byte) error {
 	}
 
 	bytes := data.Bytes()
-	err := json.Unmarshal(bytes, s.Action)
+	err = json.Unmarshal(bytes, s.Action)
 	if err != nil {
 		return errors.Wrapf(err, "Couldn't Unmarshal \"data\" blob for plugin %s.", plugName)
 	}

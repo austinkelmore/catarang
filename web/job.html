@@ -5,19 +5,19 @@
 	<body>
 		<script type="text/javascript" src="../static/cat.js"></script>
 		<script type="text/javascript" src="../static/job.js"></script>
-		This is the job: {{.JobConfig.Name}}
+		This is the job: {{.JobConfig.Data.Name}}
 		<br><br>
 
 		<strong>Job:</strong>
-		<button type="button" onclick="startJob('{{.JobConfig.Name}}');">Start Job</button>
-		<button type="button" onclick="deleteJob('{{.JobConfig.Name}}');">Delete Job</button>
+		<button type="button" onclick="startJob('{{.JobConfig.Data.Name}}');">Start Job</button>
+		<button type="button" onclick="deleteJob('{{.JobConfig.Data.Name}}');">Delete Job</button>
 		<br>
 		<br>
 		<strong>Job instances output:</strong>
 		<ol id="console_log">
 			{{ range $index, $instance := .History }}
-				<li id="{{$index}}">
-					{{range $jStep := $instance.Steps}}
+				<li id="{{$instance.Num}}">
+					{{range $jStep := $instance.Inst.Steps}}
 						Job section: {{$jStep.Log.Name}}
 						<br>
 						{{range $cmd := $jStep.Log.Cmds}}

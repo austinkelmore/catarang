@@ -33,11 +33,9 @@ type JobStep struct {
 type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
-	// todo: akelmore - move the Instance Num out of the Instance so it can't be changed (meta data on the job is a better place)
-	Num       int
-	JobConfig Config
 
-	Steps []JobStep
+	JobConfig Config
+	Steps     []JobStep
 
 	Status Status
 	Error  error
@@ -49,27 +47,27 @@ func (i *Instance) Start() {
 	defer func() { i.EndTime = time.Now() }()
 	i.Status = RUNNING
 
-	err := os.MkdirAll(i.JobConfig.LocalPath, 0777)
+	err := os.MkdirAll(i.JobConfig.Data.LocalPath, 0777)
 	if err != nil {
-		i.Error = errors.Wrapf(err, "Can't create directory for job at path \"%s\"", i.JobConfig.LocalPath)
+		i.Error = errors.Wrapf(err, "Can't create directory for job at path \"%s\"", i.JobConfig.Data.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
-	path, err := filepath.Abs(i.JobConfig.LocalPath)
+	path, err := filepath.Abs(i.JobConfig.Data.LocalPath)
 	if err != nil {
-		i.Error = errors.Wrapf(err, "Can't get absolute path from \"%s\"", i.JobConfig.LocalPath)
+		i.Error = errors.Wrapf(err, "Can't get absolute path from \"%s\"", i.JobConfig.Data.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
 	for index, _ := range i.JobConfig.Steps {
 		step := JobStep{Action: i.JobConfig.Steps[index].Action}
-		step.Log.Name = i.JobConfig.Steps[index].Name
+		step.Log.Name = i.JobConfig.Steps[index].Action.GetName()
 		step.Log.WorkingDir = path
 		i.Steps = append(i.Steps, step)
 
-		if err = i.Steps[index].Action.Run(&i.Steps[index].Log); err != nil {
+		if err = i.Steps[index].Action.Run(i.JobConfig.Data, &i.Steps[index].Log); err != nil {
 			i.Error = errors.Wrapf(err, "Couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
 			i.Status = FAILED
 			return

@@ -45,7 +45,7 @@ func AddJob(name string, repo string) error {
 func DeleteJob(jobName string) bool {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == jobName {
-			os.RemoveAll(cats.Jobs[i].JobConfig.LocalPath)
+			os.RemoveAll(cats.Jobs[i].JobConfig.Data.LocalPath)
 			cats.Jobs = append(cats.Jobs[:i], cats.Jobs[i+1:]...)
 			saveConfig()
 			log.Println("Deleted job: ", jobName)

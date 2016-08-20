@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
@@ -13,41 +14,47 @@ import (
 var destStorage = "results/"
 
 type Artifact struct {
-	ToSave string
+	ToSave []string
 }
 
-// todo: akelmore - fix artifact saving to be more robust
-// todo: akelmore - fix artifact logging to go to the steplog
-func (a *Artifact) Save(jobName string, instNum int) error {
-	destPath := filepath.Join(destStorage, jobName, fmt.Sprintf("%d", instNum+1), a.ToSave)
-	err := os.MkdirAll(filepath.Dir(destPath), 0777)
-	if err != nil {
+func save(srcDir, toSave, destDir string) error {
+	srcPath := filepath.Join(srcDir, toSave)
+	destPath := filepath.Join(destDir, toSave)
+	if err := os.MkdirAll(filepath.Dir(destPath), 0777); err != nil {
 		return errors.Wrapf(err, "Can't create directory structure \"%s\"", destPath)
 	}
 
-	// todo: akelmore - make artifact saving more resilient to save and copy errors
-	srcPath := a.ToSave
 	src, err := os.Open(srcPath)
 	if err != nil {
 		return errors.Wrapf(err, "Can't open file \"%s\"", srcPath)
 	}
-	defer src.Close()
 
 	dest, err := os.Create(destPath)
 	if err != nil {
 		return errors.Wrapf(err, "Can't create artifact file \"%s\"", destPath)
 	}
-	defer dest.Close()
 
-	_, err = io.Copy(dest, src)
-	if err != nil {
+	if _, err = io.Copy(dest, src); err != nil {
 		return errors.Wrapf(err, "Can't copy file from \"%s\" to \"%s\"", srcPath, destPath)
+	}
+
+	if err = src.Close(); err != nil {
+		return errors.Wrapf(err, "Can't close src file %s", srcPath)
+	}
+	if err = dest.Close(); err != nil {
+		return errors.Wrapf(err, "Can't close/save dest file %s", destPath)
 	}
 	return nil
 }
 
-func (a *Artifact) Run(logger *ulog.StepLog) error {
-	// todo: akelmore - make artifact saving work again
+func (a *Artifact) Run(job jobdata.Data, logger *ulog.StepLog) error {
+	destPath := filepath.Join(destStorage, job.Name, fmt.Sprintf("%d/", job.TimesRun))
+	for _, loc := range a.ToSave {
+		if err := save(job.LocalPath, loc, destPath); err != nil {
+			return errors.Wrapf(err, "Couldn't save %s", loc)
+		}
+	}
+
 	return nil
 }
 

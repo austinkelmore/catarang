@@ -1,8 +1,9 @@
 package plugin
 
 import "github.com/austinkelmore/catarang/ulog"
+import "github.com/austinkelmore/catarang/jobdata"
 
 type Runner interface {
-	Run(logger *ulog.StepLog) error
+	Run(job jobdata.Data, logger *ulog.StepLog) error
 	GetName() string
 }
