@@ -1,5 +1,12 @@
 {
-  "ExecCommand": [
-    "gb build"
+  "Steps": [
+    {
+    	"plugin" : "runcommand",
+    	"data" : {
+    		"Commands" : [
+    			"gb build"
+    		]
+    	}
+    }
   ]
 }
