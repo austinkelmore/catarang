@@ -1,6 +1,12 @@
 {
   "Steps": [
     {
+        "plugin" : "git",
+        "data" : {
+            "Origin" : "https://github.com/austinkelmore/catarang"
+        }
+    },
+    {
     	"plugin" : "runcommand",
     	"data" : {
     		"Commands" : [
