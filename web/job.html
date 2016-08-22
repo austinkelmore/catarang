@@ -15,8 +15,9 @@
 		<br>
 		<strong>Job instances output:</strong>
 		<ol id="console_log">
-			{{ range $index, $instance := .History }}
+			{{range $index, $instance := .History}}
 				<li id="{{$instance.Num}}">
+					Job Status: {{$instance.Inst.Status}}<br>
 					{{range $jStep := $instance.Inst.Steps}}
 						Job section: {{$jStep.Log.Name}}
 						<br>
@@ -27,8 +28,11 @@
 							<br>
 						{{end}}
 					{{end}}
+					<br>
+					Error (if it exists): {{$instance.Inst.Error}}
 				</li>
 			{{ end }}
 		</ol>
+		END!
 	</body>
 </html>

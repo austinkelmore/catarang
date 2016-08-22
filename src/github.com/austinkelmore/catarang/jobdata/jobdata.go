@@ -1,8 +1,11 @@
 package jobdata
 
 type Data struct {
-	Name      string
+	Name string
+	Id   int
+
 	LocalPath string
 	Origin    string
-	TimesRun  int
+
+	TimesRun int
 }

@@ -24,6 +24,22 @@ const (
 	SUCCESSFUL
 )
 
+// todo: akelmore - get generate stringer working with Status instead of hard coding it
+func (s Status) String() string {
+	switch s {
+	case INITIALIZED:
+		return "Initialized"
+	case RUNNING:
+		return "Running"
+	case FAILED:
+		return "Failed"
+	case SUCCESSFUL:
+		return "Successful"
+	default:
+		return "Unknown, not in String() function"
+	}
+}
+
 type JobStep struct {
 	Log    ulog.StepLog
 	Action plugin.Runner
