@@ -5,7 +5,7 @@ Build Pipeline
 	Or
 	And
 Builds
-	Period Builds (time based)
+	Periodic Builds (daily/weekly/time based)
 	Time Limit on builds that take too long
 	Conditional Builds (email/slack if failed)
 	Clean Build
