@@ -1,0 +1,34 @@
+Catarang Roadmap
+
+Build Pipeline
+	If
+	Or
+	And
+Builds
+	Period Builds (time based)
+	Time Limit on builds that take too long
+	Conditional Builds (email/slack if failed)
+	Clean Build
+Save/Load Config Handling
+	Allow checking in of Catarang Config
+Versioning
+	Catarang Config
+	Build Config
+	Plugins
+Secrets Handling
+	Likely integrate HashiCorp/Vault
+User Authentication
+	Add/Remove User
+	User Roles
+		Nothing but login barrier
+		Viewable
+		Runnable
+		Super User
+Tests
+	Test all major functionality
+Build Script for build all platform binaries
+Catarang Website (at least forward to github)
+Front End
+	Display all Catarang stuff with websockets
+	All above functionality exposed
+	Allow download of artifacts
