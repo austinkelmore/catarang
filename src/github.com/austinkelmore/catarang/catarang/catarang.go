@@ -98,8 +98,7 @@ var configFileName = "catarang_config.json"
 // todo: akelmore - fix threading with the reading/writing of the config
 func ReadInConfig() {
 	data, err := ioutil.ReadFile(configFileName)
-	if err != nil {
-		// todo: akelmore - before trying to create a new config, make sure the read didn't fail for some other reason than it doesn't exist
+	if err != nil && os.IsNotExist(err) {
 		// create a new config and save it out
 		log.Println("No Catarang config detected, creating new one.")
 		saveConfig()

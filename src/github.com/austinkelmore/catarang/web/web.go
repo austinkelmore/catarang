@@ -49,7 +49,6 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobName := vars["name"]
 
-	// todo: akelmore - error check that we can delete this job before trying to delete it
 	ok := catarang.DeleteJob(jobName)
 	if ok {
 		d := struct {
