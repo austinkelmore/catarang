@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/austinkelmore/catarang/catarang"
 	"github.com/austinkelmore/catarang/web"
@@ -16,6 +19,31 @@ func main() {
 	// }
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// check to see if we want to clean everything, first
+	clean := flag.Bool("clean", false, "Cleans everything so you start of fresh for testing")
+	setwd := flag.Bool("setwd", false, "Sets the working directory to the executable's directory")
+	flag.Parse()
+	if *setwd {
+		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			log.Fatal("Couldn't get the directory of executable")
+		}
+
+		if err := os.Chdir(dir); err != nil {
+			log.Fatal("Couldn't set working directory to", dir)
+		}
+
+		log.Println("Set working directory to", dir)
+	}
+	if *clean {
+		os.Remove(catarang.ConfigFileName)
+		os.RemoveAll("jobs/")
+		os.RemoveAll("results/")
+
+		log.Println("Cleaned catarang to start from scratch")
+	}
+
 	catarang.ReadInConfig()
 
 	r := web.CreateRoutes()

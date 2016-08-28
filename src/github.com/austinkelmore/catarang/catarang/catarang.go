@@ -93,11 +93,11 @@ func SendToJobConns(jobName string, data interface{}) {
 	}
 }
 
-var configFileName = "catarang_config.json"
+var ConfigFileName = "catarang_config.json"
 
 // todo: akelmore - fix threading with the reading/writing of the config
 func ReadInConfig() {
-	data, err := ioutil.ReadFile(configFileName)
+	data, err := ioutil.ReadFile(ConfigFileName)
 	if err != nil && os.IsNotExist(err) {
 		// create a new config and save it out
 		log.Println("No Catarang config detected, creating new one.")
@@ -106,7 +106,7 @@ func ReadInConfig() {
 	}
 
 	if err = json.Unmarshal(data, &cats); err != nil {
-		log.Println("Error reading in", configFileName)
+		log.Println("Error reading in", ConfigFileName)
 		log.Println(err.Error())
 	}
 }
@@ -118,9 +118,9 @@ func saveConfig() {
 		return
 	}
 
-	err = ioutil.WriteFile(configFileName, []byte(data), 0644)
+	err = ioutil.WriteFile(ConfigFileName, []byte(data), 0644)
 	if err != nil {
-		log.Println("Error writing config file", configFileName)
+		log.Println("Error writing config file", ConfigFileName)
 		log.Println(err.Error())
 	}
 }
