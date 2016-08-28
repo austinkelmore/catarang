@@ -72,6 +72,12 @@ function deleteJob(name) {
 	xhttp.send();
 }
 
+function cleanJob(name) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.open("POST", "/job/"+name+"/clean", true);
+	xhttp.send();
+}
+
 function addJob(oFormElement) {
 	var xhr = new XMLHttpRequest();
 	xhr.open("POST", "/jobs/add", true);

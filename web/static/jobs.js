@@ -52,23 +52,3 @@ window.onload = function() {
 		console.log("Websocket Error: " + e.data);
 	}
 }
-
-function startJob(name) {
-	var xhttp = new XMLHttpRequest();
-	xhttp.open("POST", "/job/"+name+"/start", true);
-	xhttp.send();
-}
-
-function deleteJob(name) {
-	var xhttp = new XMLHttpRequest();
-	xhttp.open("POST", "/job/"+name+"/delete", true);
-	xhttp.send();
-}
-
-function addJob(oFormElement) {
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", "/jobs/add", true);
-	xhr.send(new FormData(oFormElement));
-	oFormElement.reset();
-	return false;
-}

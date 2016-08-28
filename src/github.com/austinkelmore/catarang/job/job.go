@@ -3,6 +3,7 @@ package job
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -91,4 +92,9 @@ func (j *Job) Run() {
 	inst.JobConfig = j.JobConfig
 
 	inst.Start()
+}
+
+func (j *Job) Clean() {
+	log.Printf("Cleaning Job \"%s\" from local path \"%s\"\n", j.GetName(), j.JobConfig.Data.LocalPath)
+	os.RemoveAll(j.JobConfig.Data.LocalPath)
 }

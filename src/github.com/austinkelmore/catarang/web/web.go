@@ -3,6 +3,7 @@ package web
 import (
 	"log"
 	"net/http"
+	"path/filepath"
 	"text/template"
 
 	"github.com/austinkelmore/catarang/catarang"
@@ -10,6 +11,8 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/net/websocket"
 )
+
+var WebDir string = "web"
 
 func CreateRoutes() *mux.Router {
 	r := mux.NewRouter()
@@ -22,10 +25,11 @@ func CreateRoutes() *mux.Router {
 	r.HandleFunc("/job/{name}", jobHandler)
 	r.HandleFunc("/job/{name}/start", startJobHandler)
 	r.HandleFunc("/job/{name}/delete", deleteJobHandler)
+	r.HandleFunc("/job/{name}/clean", cleanJobHandler)
 	r.HandleFunc("/job/{name}/ws", jobWSHandler)
 	// r.Handle("/job/{name}/ws", websocket.Handler(handleJobWSConn))
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(WebDir, "static/")))))
 	return r
 }
 
@@ -58,6 +62,13 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func cleanJobHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	jobName := vars["name"]
+
+	catarang.CleanJob(jobName)
+}
+
 func startJobHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	jobName := vars["name"]
@@ -66,7 +77,7 @@ func startJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func jobHandler(w http.ResponseWriter, r *http.Request) {
 	// todo: akelmore - unify the html pages and cache them off so they're not being parsed every time the webpage is hit
-	root, err := template.ParseFiles("web/job.html")
+	root, err := template.ParseFiles(filepath.Join(WebDir, "job.html"))
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -86,7 +97,7 @@ func jobHandler(w http.ResponseWriter, r *http.Request) {
 
 func jobsHandler(w http.ResponseWriter, r *http.Request) {
 	// todo: akelmore - unify the html pages and cache them off so they're not being parsed every time the webpage is hit
-	root, err := template.ParseFiles("web/jobs.html")
+	root, err := template.ParseFiles(filepath.Join(WebDir, "jobs.html"))
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -126,7 +137,7 @@ func jobWSHandler(w http.ResponseWriter, r *http.Request) {
 
 func renderWebpage(w http.ResponseWriter, r *http.Request) {
 	// todo: akelmore - unify the html pages and cache them off so they're not being parsed every time the webpage is hit
-	root, err := template.ParseFiles("web/root.html")
+	root, err := template.ParseFiles(filepath.Join(WebDir, "root.html"))
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

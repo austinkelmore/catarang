@@ -3,7 +3,7 @@
 	[
 		{
 			"path": "../",
-			"folder_exclude_patterns": ["bin", "jobs", "tests/test_repos", "pkg", "vendor"]
+			"folder_exclude_patterns": ["bin", "pkg", "vendor"]
 		},
 		{
 			"path": "../vendor"

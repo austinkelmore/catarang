@@ -22,9 +22,9 @@ func main() {
 
 	// check to see if we want to clean everything, first
 	clean := flag.Bool("clean", false, "Cleans everything so you start of fresh for testing")
-	setwd := flag.Bool("setwd", false, "Sets the working directory to the executable's directory")
+	qtest := flag.Bool("qtest", false, "Sets up a quick test assuming you have the normal build setup.")
 	flag.Parse()
-	if *setwd {
+	if *qtest {
 		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 		if err != nil {
 			log.Fatal("Couldn't get the directory of executable")
@@ -35,6 +35,7 @@ func main() {
 		}
 
 		log.Println("Set working directory to", dir)
+		web.WebDir = "../web"
 	}
 	if *clean {
 		os.Remove(catarang.ConfigFileName)

@@ -45,7 +45,7 @@ func AddJob(name string, repo string) error {
 func DeleteJob(jobName string) bool {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == jobName {
-			os.RemoveAll(cats.Jobs[i].JobConfig.Data.LocalPath)
+			cats.Jobs[i].Clean()
 			cats.Jobs = append(cats.Jobs[:i], cats.Jobs[i+1:]...)
 			saveConfig()
 			log.Println("Deleted job: ", jobName)
@@ -53,6 +53,14 @@ func DeleteJob(jobName string) bool {
 		}
 	}
 	return false
+}
+
+func CleanJob(job string) {
+	for i := range cats.Jobs {
+		if cats.Jobs[i].GetName() == job {
+			cats.Jobs[i].Clean()
+		}
+	}
 }
 
 func StartJob(jobName string) {
