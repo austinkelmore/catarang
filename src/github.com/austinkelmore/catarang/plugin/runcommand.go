@@ -20,7 +20,7 @@ func (r *RunCommand) Run(job jobdata.Data, logger *ulog.StepLog) error {
 		if len(fields) > 0 {
 			exec := logger.New(fields[0], fields[1:]...)
 			if err := exec.Run(); err != nil {
-				return errors.Wrapf(err, "Error running the command \"%s\"", cmd)
+				return errors.Wrapf(err, "error running the command \"%s\"", cmd)
 			}
 		}
 	}

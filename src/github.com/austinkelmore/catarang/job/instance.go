@@ -86,7 +86,7 @@ func (i *Instance) Start() {
 		i.Steps = append(i.Steps, step)
 
 		if err = i.Steps[index].Action.Run(i.InstConfig.Data, &i.Steps[index].Log); err != nil {
-			i.Error = errors.Wrapf(err, "Couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
+			i.Error = errors.Wrapf(err, "couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
 			i.Status = FAILED
 			return
 		}
