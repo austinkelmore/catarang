@@ -20,11 +20,11 @@ func main() {
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// check to see if we want to clean everything, first
 	clean := flag.Bool("clean", false, "Cleans everything so you start of fresh for testing")
-	qtest := flag.Bool("qtest", false, "Sets up a quick test assuming you have the normal build setup.")
+	dev := flag.Bool("dev", false, "Sets up a dev environment to point to the web assets, but run in the bin dir assuming you have the normal build setup.")
 	flag.Parse()
-	if *qtest {
+
+	if *dev {
 		dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 		if err != nil {
 			log.Fatal("Couldn't get the directory of executable")
