@@ -62,6 +62,7 @@ func (g *Git) UpdateExisting(logger *ulog.StepLog) error {
 	return nil
 }
 
+// Run is the entry point into the git plugin
 func (g *Git) Run(job jobdata.Data, logger *ulog.StepLog) error {
 	if err := g.UpdateExisting(logger); err != nil {
 		return errors.Wrap(err, "Error running git's UpdateExisting")
@@ -70,10 +71,12 @@ func (g *Git) Run(job jobdata.Data, logger *ulog.StepLog) error {
 	return nil
 }
 
+// GetName returns the name of the plugin
 func (g Git) GetName() string {
 	return "git"
 }
 
+// SetOrigin sets the origin of the git repository
 func (g *Git) SetOrigin(origin string) error {
 	g.Origin = origin
 	return nil

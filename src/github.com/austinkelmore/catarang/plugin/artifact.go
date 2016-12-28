@@ -13,6 +13,7 @@ import (
 
 var destStorage = "results/"
 
+// Artifact stores off the specified paths/objects
 type Artifact struct {
 	ToSave []string
 }
@@ -47,6 +48,7 @@ func save(srcDir, toSave, destDir string) error {
 	return nil
 }
 
+// Run is the entry point into the Artifact plugin
 func (a *Artifact) Run(job jobdata.Data, logger *ulog.StepLog) error {
 	destPath := filepath.Join(destStorage, job.Name, fmt.Sprintf("%d/", job.TimesRun))
 	for _, loc := range a.ToSave {
@@ -58,6 +60,7 @@ func (a *Artifact) Run(job jobdata.Data, logger *ulog.StepLog) error {
 	return nil
 }
 
+// GetName returns the name of the plugin
 func (a Artifact) GetName() string {
 	return "artifact"
 }

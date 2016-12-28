@@ -1,3 +1,4 @@
 /bin/
 /pkg/
 /projects/*.sublime-workspace
+/vendor/pkg/

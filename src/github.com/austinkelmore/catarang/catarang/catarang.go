@@ -17,12 +17,14 @@ func init() {
 	cats.conns = make(map[string][]*websocket.Conn)
 }
 
+// Catarang is the root config for the whole app
 type Catarang struct {
 	Jobs     []job.Job
 	conns    map[string][]*websocket.Conn
 	jobConns []*websocket.Conn
 }
 
+// AddJob will add a new job to the server's config
 func AddJob(name string, repo string) error {
 	// names must be unique
 	for _, j := range cats.Jobs {
@@ -42,6 +44,7 @@ func AddJob(name string, repo string) error {
 	return nil
 }
 
+// DeleteJob will delete a job from the server's config
 func DeleteJob(jobName string) bool {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == jobName {
@@ -55,6 +58,7 @@ func DeleteJob(jobName string) bool {
 	return false
 }
 
+// CleanJob will clean all of the local data from the specified job
 func CleanJob(job string) {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == job {
@@ -63,6 +67,7 @@ func CleanJob(job string) {
 	}
 }
 
+// StartJob will start an instance of the job
 func StartJob(jobName string) {
 	for i := range cats.Jobs {
 		if cats.Jobs[i].GetName() == jobName {
@@ -73,18 +78,22 @@ func StartJob(jobName string) {
 	}
 }
 
+// GetJobs returns a splice of the jobs
 func GetJobs() []job.Job {
 	return cats.Jobs
 }
 
+// AddJobsConn appends the websocket to the list of jobs page websockets
 func AddJobsConn(ws *websocket.Conn) {
 	cats.jobConns = append(cats.jobConns, ws)
 }
 
+// AddJobConn appends the websocket to the list of specified job page websockets
 func AddJobConn(jobName string, ws *websocket.Conn) {
 	cats.conns[jobName] = append(cats.conns[jobName], ws)
 }
 
+// SendToJobsConns sends data to all of the connected jobs page websockets
 func SendToJobsConns(data interface{}) {
 	for _, conn := range cats.jobConns {
 		if err := websocket.JSON.Send(conn, data); err != nil {
@@ -93,6 +102,7 @@ func SendToJobsConns(data interface{}) {
 	}
 }
 
+// SendToJobConns sends data to all of the connected specified job page websockets
 func SendToJobConns(jobName string, data interface{}) {
 	for _, conn := range cats.conns[jobName] {
 		if err := websocket.JSON.Send(conn, data); err != nil {
@@ -101,8 +111,10 @@ func SendToJobConns(jobName string, data interface{}) {
 	}
 }
 
+// todo: akelmore - remove hack to clean project quickly and then make this non-exportable
 var ConfigFileName = "catarang_config.json"
 
+// ReadInConfig will read in the config file and put it into the Catarang config for the server
 // todo: akelmore - fix threading with the reading/writing of the config
 func ReadInConfig() {
 	data, err := ioutil.ReadFile(ConfigFileName)

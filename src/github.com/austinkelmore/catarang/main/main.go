@@ -35,7 +35,7 @@ func main() {
 		}
 
 		log.Println("Set working directory to", dir)
-		web.WebDir = "../web"
+		web.SetWebDir("../web")
 	}
 	if *clean {
 		os.Remove(catarang.ConfigFileName)

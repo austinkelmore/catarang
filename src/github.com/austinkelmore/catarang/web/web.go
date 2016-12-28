@@ -12,8 +12,14 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-var WebDir string = "web"
+var webDir = "web"
 
+// SetWebDir sets the directory where the html, css, and other web related files can be found
+func SetWebDir(dir string) {
+	webDir = dir
+}
+
+// CreateRoutes creates all of the routes and returns the router for the routes
 func CreateRoutes() *mux.Router {
 	r := mux.NewRouter()
 
@@ -29,7 +35,7 @@ func CreateRoutes() *mux.Router {
 	r.HandleFunc("/job/{name}/ws", jobWSHandler)
 	// r.Handle("/job/{name}/ws", websocket.Handler(handleJobWSConn))
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(WebDir, "static/")))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(webDir, "static/")))))
 	return r
 }
 
@@ -77,7 +83,7 @@ func startJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func jobHandler(w http.ResponseWriter, r *http.Request) {
 	// todo: akelmore - unify the html pages and cache them off so they're not being parsed every time the webpage is hit
-	root, err := template.ParseFiles(filepath.Join(WebDir, "job.html"))
+	root, err := template.ParseFiles(filepath.Join(webDir, "job.html"))
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -97,7 +103,7 @@ func jobHandler(w http.ResponseWriter, r *http.Request) {
 
 func jobsHandler(w http.ResponseWriter, r *http.Request) {
 	// todo: akelmore - unify the html pages and cache them off so they're not being parsed every time the webpage is hit
-	root, err := template.ParseFiles(filepath.Join(WebDir, "jobs.html"))
+	root, err := template.ParseFiles(filepath.Join(webDir, "jobs.html"))
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -137,7 +143,7 @@ func jobWSHandler(w http.ResponseWriter, r *http.Request) {
 
 func renderWebpage(w http.ResponseWriter, r *http.Request) {
 	// todo: akelmore - unify the html pages and cache them off so they're not being parsed every time the webpage is hit
-	root, err := template.ParseFiles(filepath.Join(WebDir, "root.html"))
+	root, err := template.ParseFiles(filepath.Join(webDir, "root.html"))
 	if err != nil {
 		log.Println("Can't parse root.html file.")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

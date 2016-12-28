@@ -14,20 +14,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Config is the where a job keeps all of the necessary
-// information for running an instance of itself
+// Config is the the necessary information to run a job.
 type Config struct {
 	Data  jobdata.Data
 	Steps []Step
 }
 
+// InstData is the combination of the instance data itself and the metadata associated with it.
+// This includes information that would be useful to know about the run within the context of a history of a job.
 type InstData struct {
 	Inst Instance
 	Num  int
 }
 
 // Job is the way in which you can run commands on the server or nodes
-// it's the main reason this whole build system is created - to run jobs
+// it's the main reason this whole build system is created - to run jobs.
 type Job struct {
 	JobLog  ulog.StepLog // log for the job outside of instances of it being run (used for polling)
 	History []InstData
@@ -35,7 +36,7 @@ type Job struct {
 	JobConfig Config
 }
 
-// NewJob creates a new job and initializes it with necessary values
+// NewJob creates a new job and initializes it with necessary values.
 func NewJob(name string, origin string) (*Job, error) {
 	job := Job{}
 	job.JobConfig.Data = jobdata.Data{Name: name, Origin: origin, LocalPath: filepath.Join("jobs/", name)}
@@ -57,6 +58,8 @@ func NewJob(name string, origin string) (*Job, error) {
 	return &job, nil
 }
 
+// UpdateConfig updates the configuration information for the job. This needs to be done every time in case
+// it has changed from the previous run.
 func (j *Job) UpdateConfig() error {
 	// first update the repository that this job is based on
 	// todo: akelmore - make updating the config based on what type of SCM this is instead of hard using git
@@ -81,12 +84,14 @@ func (j *Job) UpdateConfig() error {
 	return nil
 }
 
+// GetName returns the name of the job
 func (j Job) GetName() string {
 	return j.JobConfig.Data.Name
 }
 
+// Run is the entry point to start the job
 func (j *Job) Run() {
-	j.JobConfig.Data.TimesRun += 1
+	j.JobConfig.Data.TimesRun++
 	j.History = append(j.History, InstData{Num: j.JobConfig.Data.TimesRun})
 	inst := &j.History[len(j.History)-1].Inst
 	inst.JobConfig = j.JobConfig
@@ -94,6 +99,7 @@ func (j *Job) Run() {
 	inst.Start()
 }
 
+// Clean will delete all local job data
 func (j *Job) Clean() {
 	log.Printf("Cleaning Job \"%s\" from local path \"%s\"\n", j.GetName(), j.JobConfig.Data.LocalPath)
 	os.RemoveAll(j.JobConfig.Data.LocalPath)

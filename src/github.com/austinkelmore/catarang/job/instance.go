@@ -40,12 +40,14 @@ func (s Status) String() string {
 	}
 }
 
+// JobStep is a distinct use of a plugin to do a single step or action within a job
+// todo: akelmore - figure out why JobStep is different from Step
 type JobStep struct {
 	Log    ulog.StepLog
 	Action plugin.Runner
 }
 
-// Instance a single run of a job
+// Instance is a single run of a job
 type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
@@ -57,7 +59,7 @@ type Instance struct {
 	Error  error
 }
 
-// Start Entry point for the instance
+// Start is an entry point for the instance
 func (i *Instance) Start() {
 	i.StartTime = time.Now()
 	defer func() { i.EndTime = time.Now() }()
@@ -77,7 +79,7 @@ func (i *Instance) Start() {
 		return
 	}
 
-	for index, _ := range i.JobConfig.Steps {
+	for index := range i.JobConfig.Steps {
 		step := JobStep{Action: i.JobConfig.Steps[index].Action}
 		step.Log.Name = i.JobConfig.Steps[index].Action.GetName()
 		step.Log.WorkingDir = path

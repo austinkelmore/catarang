@@ -7,6 +7,7 @@ import (
 	"github.com/austinkelmore/catarang/plugin/scm"
 )
 
+// Plugins returns the map of plugins that the system knows about
 func Plugins() map[string]reflect.Type {
 	return plugins
 }

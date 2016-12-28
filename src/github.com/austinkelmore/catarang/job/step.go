@@ -10,30 +10,32 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Step is a single step in a job that is defined by a name which looks itself up in the pluginlist
 type Step struct {
 	Action plugin.Runner
 	Name   string
 }
 
+// UnmarshalJSON converts arbitrary JSON into Go objects based on the plugins that are known in pluginlist.
 func (s *Step) UnmarshalJSON(b []byte) error {
 	parsed, err := gabs.ParseJSON(b)
 	if err != nil {
-		return errors.Wrap(err, "Error parsing JSON while unmarshaling it.")
+		return errors.Wrap(err, "error parsing JSON while unmarshaling it")
 	}
 
 	plug := parsed.Search("plugin")
 	if plug == nil {
-		return errors.New("Couldn't find \"plugin\" in Step.")
+		return errors.New("couldn't find \"plugin\" in Step")
 	}
 
 	plugName, ok := plug.Data().(string)
 	if !ok {
-		return errors.New("\"plugin\" does not reference a string.")
+		return errors.New("\"plugin\" does not reference a string")
 	}
 
 	actionType, ok := pluginlist.Plugins()[plugName]
 	if !ok {
-		return errors.Errorf("Couldn't find plugin of type \"%s\" in the pluginlist. Have you added it there?.", plugName)
+		return errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", plugName)
 	}
 
 	inter := reflect.New(actionType.Elem())
