@@ -40,11 +40,11 @@ func (s Status) String() string {
 	}
 }
 
-// JobStep is a distinct use of a plugin to do a single step or action within a job
-// todo: akelmore - figure out why JobStep is different from Step
-type JobStep struct {
+// InstJobStep is a distinct use of a plugin to do a single step or action within a job
+// todo: akelmore - figure out why InstJobStep is different from Step
+type InstJobStep struct {
 	Log    ulog.StepLog
-	Action plugin.Runner
+	Action plugin.JobStep
 }
 
 // Instance is a single run of a job
@@ -52,8 +52,8 @@ type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
 
-	JobConfig Config
-	Steps     []JobStep
+	InstConfig Config
+	Steps      []InstJobStep
 
 	Status Status
 	Error  error
@@ -65,27 +65,27 @@ func (i *Instance) Start() {
 	defer func() { i.EndTime = time.Now() }()
 	i.Status = RUNNING
 
-	err := os.MkdirAll(i.JobConfig.Data.LocalPath, 0777)
+	err := os.MkdirAll(i.InstConfig.Data.LocalPath, 0777)
 	if err != nil {
-		i.Error = errors.Wrapf(err, "Can't create directory for job at path \"%s\"", i.JobConfig.Data.LocalPath)
+		i.Error = errors.Wrapf(err, "can't create directory for job at path \"%s\"", i.InstConfig.Data.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
-	path, err := filepath.Abs(i.JobConfig.Data.LocalPath)
+	path, err := filepath.Abs(i.InstConfig.Data.LocalPath)
 	if err != nil {
-		i.Error = errors.Wrapf(err, "Can't get absolute path from \"%s\"", i.JobConfig.Data.LocalPath)
+		i.Error = errors.Wrapf(err, "can't get absolute path from \"%s\"", i.InstConfig.Data.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
-	for index := range i.JobConfig.Steps {
-		step := JobStep{Action: i.JobConfig.Steps[index].Action}
-		step.Log.Name = i.JobConfig.Steps[index].Action.GetName()
+	for index := range i.InstConfig.Steps {
+		step := InstJobStep{Action: i.InstConfig.Steps[index].Plugin}
+		step.Log.Name = i.InstConfig.Steps[index].Plugin.GetName()
 		step.Log.WorkingDir = path
 		i.Steps = append(i.Steps, step)
 
-		if err = i.Steps[index].Action.Run(i.JobConfig.Data, &i.Steps[index].Log); err != nil {
+		if err = i.Steps[index].Action.Run(i.InstConfig.Data, &i.Steps[index].Log); err != nil {
 			i.Error = errors.Wrapf(err, "Couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
 			i.Status = FAILED
 			return

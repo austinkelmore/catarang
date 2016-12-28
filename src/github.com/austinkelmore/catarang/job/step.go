@@ -10,47 +10,48 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Step is a single step in a job that is defined by a name which looks itself up in the pluginlist
-type Step struct {
-	Action plugin.Runner
-	Name   string
+// StepTemplate is a single step in a job that is defined by a name which looks itself up in the pluginlist
+type StepTemplate struct {
+	PluginName string         `json:"plugin_name"`
+	Plugin     plugin.JobStep `json:"plugin"`
 }
 
 // UnmarshalJSON converts arbitrary JSON into Go objects based on the plugins that are known in pluginlist.
-func (s *Step) UnmarshalJSON(b []byte) error {
+func (s *StepTemplate) UnmarshalJSON(b []byte) error {
 	parsed, err := gabs.ParseJSON(b)
 	if err != nil {
 		return errors.Wrap(err, "error parsing JSON while unmarshaling it")
 	}
 
-	plug := parsed.Search("plugin")
-	if plug == nil {
-		return errors.New("couldn't find \"plugin\" in Step")
+	pluginNameJSON := parsed.Search("plugin_name")
+	if pluginNameJSON.Data() == nil {
+		return errors.New("couldn't find \"plugin_name\" in StepTemplate")
 	}
 
-	plugName, ok := plug.Data().(string)
+	name, ok := pluginNameJSON.Data().(string)
 	if !ok {
-		return errors.New("\"plugin\" does not reference a string")
+		return errors.New("\"plugin_name\" does not reference a string")
 	}
+	s.PluginName = name
 
-	actionType, ok := pluginlist.Plugins()[plugName]
+	plug, ok := pluginlist.Plugins()[s.PluginName]
 	if !ok {
-		return errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", plugName)
+		return errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", s.PluginName)
 	}
 
-	inter := reflect.New(actionType.Elem())
-	s.Action = inter.Interface().(plugin.Runner)
+	inter := reflect.New(plug.Elem())
+	s.Plugin = inter.Interface().(plugin.JobStep)
 
 	// shove the data inside the config into the plugin
-	data := parsed.Search("data")
+	data := parsed.Search("plugin")
 	if data == nil {
-		return errors.Errorf("No \"data\" blob associated with plugin \"%s\".", plugName)
+		return errors.Errorf("no \"plugin\" blob associated with plugin \"%s\"", s.PluginName)
 	}
 
 	bytes := data.Bytes()
-	err = json.Unmarshal(bytes, s.Action)
+	err = json.Unmarshal(bytes, s.Plugin)
 	if err != nil {
-		return errors.Wrapf(err, "Couldn't Unmarshal \"data\" blob for plugin %s.", plugName)
+		return errors.Wrapf(err, "couldn't Unmarshal \"plugin\" blob for plugin %s", s.PluginName)
 	}
 
 	return nil

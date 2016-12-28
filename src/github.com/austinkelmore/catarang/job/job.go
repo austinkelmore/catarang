@@ -17,7 +17,7 @@ import (
 // Config is the the necessary information to run a job.
 type Config struct {
 	Data  jobdata.Data
-	Steps []Step
+	Steps []StepTemplate
 }
 
 // InstData is the combination of the instance data itself and the metadata associated with it.
@@ -43,14 +43,14 @@ func NewJob(name string, origin string) (*Job, error) {
 	job.JobLog.Name = "job_log"
 
 	if err := job.UpdateConfig(); err != nil {
-		return nil, errors.Wrap(err, "Couldn't update the config.")
+		return nil, errors.Wrap(err, "couldn't update the job's config when creating a new job")
 	}
 
 	// go through and set the origin on every SCM so its aware of where we got this job from
 	for i := range job.JobConfig.Steps {
-		if scm, ok := job.JobConfig.Steps[i].Action.(scm.SCMer); ok {
+		if scm, ok := job.JobConfig.Steps[i].Plugin.(scm.SCMer); ok {
 			if err := scm.SetOrigin(origin); err != nil {
-				return nil, errors.Wrapf(err, "Couldn't Set Origin on source control manager %s", job.JobConfig.Steps[i].Action.GetName())
+				return nil, errors.Wrapf(err, "couldn't Set Origin on source control manager %s", job.JobConfig.Steps[i].Plugin.GetName())
 			}
 		}
 	}
@@ -68,17 +68,17 @@ func (j *Job) UpdateConfig() error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "Couldn't git clone origin \"%s\" to local path \"%s\"", j.JobConfig.Data.Origin, j.JobConfig.Data.LocalPath)
+		return errors.Wrapf(err, "couldn't git clone origin \"%s\" to local path \"%s\"", j.JobConfig.Data.Origin, j.JobConfig.Data.LocalPath)
 	}
 
 	file := filepath.Join(j.JobConfig.Data.LocalPath, ".catarang.json")
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return errors.Wrapf(err, "Error reading in config file \"%s\"", file)
+		return errors.Wrapf(err, "error reading in config file \"%s\"", file)
 	}
 
 	if err = json.Unmarshal(data, &j.JobConfig); err != nil {
-		return errors.Wrapf(err, "Error unmarshaling json from \"%s\"", file)
+		return errors.Wrapf(err, "error unmarshaling json from \"%s\"", file)
 	}
 
 	return nil
@@ -94,7 +94,7 @@ func (j *Job) Run() {
 	j.JobConfig.Data.TimesRun++
 	j.History = append(j.History, InstData{Num: j.JobConfig.Data.TimesRun})
 	inst := &j.History[len(j.History)-1].Inst
-	inst.JobConfig = j.JobConfig
+	inst.InstConfig = j.JobConfig
 
 	inst.Start()
 }

@@ -45,6 +45,7 @@ func addJobHandler(w http.ResponseWriter, r *http.Request) {
 	err := catarang.AddJob(name, repo)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
+		log.Println("Error creating new job: ", err.Error())
 		return
 	}
 

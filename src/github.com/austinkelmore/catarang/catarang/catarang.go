@@ -29,13 +29,13 @@ func AddJob(name string, repo string) error {
 	// names must be unique
 	for _, j := range cats.Jobs {
 		if j.GetName() == name {
-			return errors.Errorf("A job with the name \"%s\" already exists. Job names must be unique.", name)
+			return errors.Errorf("job \"%s\" already exists, job names must be unique", name)
 		}
 	}
 
 	job, err := job.NewJob(name, repo)
 	if err != nil {
-		return errors.Wrapf(err, "Couldn't create job %s", name)
+		return errors.Wrapf(err, "couldn't create job %s", name)
 	}
 
 	cats.Jobs = append(cats.Jobs, *job)
@@ -126,8 +126,7 @@ func ReadInConfig() {
 	}
 
 	if err = json.Unmarshal(data, &cats); err != nil {
-		log.Println("Error reading in", ConfigFileName)
-		log.Println(err.Error())
+		log.Printf("Error reading in %v: %v\n", ConfigFileName, err.Error())
 	}
 }
 
@@ -140,7 +139,6 @@ func saveConfig() {
 
 	err = ioutil.WriteFile(ConfigFileName, []byte(data), 0644)
 	if err != nil {
-		log.Println("Error writing config file", ConfigFileName)
-		log.Println(err.Error())
+		log.Printf("Error writing config file %v: %v\n", ConfigFileName, err.Error())
 	}
 }

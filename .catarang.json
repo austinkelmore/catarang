@@ -1,18 +1,18 @@
 {
   "Steps": [
     {
-        "plugin" : "git",
-        "data" : {
-            "Origin" : "https://github.com/austinkelmore/catarang"
-        }
+      "plugin_name": "git",
+      "plugin": {
+        "Origin": "https://github.com/austinkelmore/catarang"
+      }
     },
     {
-    	"plugin" : "runcommand",
-    	"data" : {
-    		"Commands" : [
-    			"gb build"
-    		]
-    	}
+      "plugin_name": "runcommand",
+      "plugin": {
+        "Commands": [
+          "gb build"
+        ]
+      }
     }
   ]
 }

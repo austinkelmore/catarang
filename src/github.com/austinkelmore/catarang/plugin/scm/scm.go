@@ -9,5 +9,5 @@ type SCMer interface {
 	Poll(logger *ulog.StepLog) (bool, error)
 	UpdateExisting(logger *ulog.StepLog) error
 	SetOrigin(origin string) error
-	plugin.Runner
+	plugin.JobStep
 }
