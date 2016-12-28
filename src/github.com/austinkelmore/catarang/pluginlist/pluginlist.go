@@ -14,13 +14,23 @@ func Plugins() map[string]reflect.Type {
 
 var plugins map[string]reflect.Type
 
-func init() {
-	plugins = make(map[string]reflect.Type)
-	addPlugin(&scm.Git{})
-	addPlugin(&plugin.RunCommand{})
-	addPlugin(&plugin.Artifact{})
+func pluginList() []plugin.JobStep {
+	// add all known plugins into this array
+	pluginTypes := []plugin.JobStep{
+		&scm.Git{},
+		&plugin.RunCommand{},
+		&plugin.Artifact{},
+	}
+	return pluginTypes
 }
 
-func addPlugin(p plugin.Runner) {
+func init() {
+	plugins = make(map[string]reflect.Type)
+	for _, plugin := range pluginList() {
+		addPlugin(plugin)
+	}
+}
+
+func addPlugin(p plugin.JobStep) {
 	plugins[p.GetName()] = reflect.ValueOf(p).Type()
 }
