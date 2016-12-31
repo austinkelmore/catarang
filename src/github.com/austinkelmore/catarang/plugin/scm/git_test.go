@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/austinkelmore/catarang/plugin/scm"
-	"github.com/austinkelmore/catarang/ulog"
+	"github.com/austinkelmore/catarang/cmd"
 )
 
 // TestMain is the entry point for this file's tests
@@ -94,7 +94,7 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 
 	git := &scm.Git{}
 	git.SetOrigin(origin)
-	logger := ulog.StepLog{}
+	logger := cmd.Log{}
 	logger.WorkingDir = clone
 	err = git.FirstTimeSetup(&logger)
 	return git, err
@@ -135,7 +135,7 @@ func TestFirstTimeSetupFail(t *testing.T) {
 	git := scm.Git{}
 	git.SetOrigin("bogus_repo_path/")
 
-	logger := ulog.StepLog{}
+	logger := cmd.Log{}
 	logger.WorkingDir = localPath + "FirstTimeSetupFail/"
 	err := git.FirstTimeSetup(&logger)
 	if err == nil {
@@ -152,7 +152,7 @@ func TestSetupPollAndSync(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	logger := ulog.StepLog{}
+	logger := cmd.Log{}
 	logger.WorkingDir = testrepo
 	shouldRun, err := git.Poll(&logger)
 	if err != nil {
@@ -206,7 +206,7 @@ func TestPollEmpty(t *testing.T) {
 	}
 
 	// todo: akelmore - do we want to be able to poll an empty repository?
-	logger := ulog.StepLog{}
+	logger := cmd.Log{}
 	logger.WorkingDir = clone
 	shouldRun, err := git.Poll(&logger)
 	if err == nil {

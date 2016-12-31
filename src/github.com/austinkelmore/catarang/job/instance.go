@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/austinkelmore/catarang/cmd"
 	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/plugin/scm"
-	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
 
@@ -45,7 +45,7 @@ func (s Status) String() string {
 // InstJobStep is a distinct use of a plugin to do a single step or action within a job
 // todo: akelmore - figure out why InstJobStep is different from Step
 type InstJobStep struct {
-	Log    ulog.StepLog
+	Log    cmd.Log
 	Action plugin.JobStep
 }
 

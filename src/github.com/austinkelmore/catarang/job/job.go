@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/austinkelmore/catarang/cmd"
 	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/step"
-	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
 
@@ -37,7 +37,7 @@ type InstData struct {
 // Job is the way in which you can run commands on the server or nodes
 // it's the main reason this whole build system is created - to run jobs.
 type Job struct {
-	JobLog  ulog.StepLog // log for the job outside of instances of it being run (used for polling)
+	JobLog  cmd.Log // log for the job outside of instances of it being run (used for polling)
 	History []InstData
 
 	Template Template
