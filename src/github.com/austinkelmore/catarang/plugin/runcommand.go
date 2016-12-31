@@ -14,7 +14,7 @@ type RunCommand struct {
 }
 
 // Run is the entry point into the RunCommand plugin
-func (r *RunCommand) Run(job jobdata.Data, logger *ulog.StepLog) error {
+func (r *RunCommand) Run(job jobdata.MetaData, logger *ulog.StepLog) error {
 	for _, cmd := range r.Commands {
 		fields := strings.Fields(cmd)
 		if len(fields) > 0 {

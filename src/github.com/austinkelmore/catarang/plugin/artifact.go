@@ -16,6 +16,8 @@ var destStorage = "results/"
 // Artifact stores off the specified paths/objects
 type Artifact struct {
 	ToSave []string
+	// todo: akelmore - hook up SavePath
+	SavePath string
 }
 
 func save(srcDir, toSave, destDir string) error {
@@ -49,7 +51,7 @@ func save(srcDir, toSave, destDir string) error {
 }
 
 // Run is the entry point into the Artifact plugin
-func (a *Artifact) Run(job jobdata.Data, logger *ulog.StepLog) error {
+func (a *Artifact) Run(job jobdata.MetaData, logger *ulog.StepLog) error {
 	destPath := filepath.Join(destStorage, job.Name, fmt.Sprintf("%d/", job.TimesRun))
 	for _, loc := range a.ToSave {
 		if err := save(job.LocalPath, loc, destPath); err != nil {

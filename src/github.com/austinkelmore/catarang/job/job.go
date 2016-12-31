@@ -5,19 +5,26 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/austinkelmore/catarang/jobdata"
-	"github.com/austinkelmore/catarang/plugin/scm"
+	"github.com/austinkelmore/catarang/step"
 	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
 
-// Config is the the necessary information to run a job.
-type Config struct {
-	Data  jobdata.Data
-	Steps []StepTemplate
+type Template struct {
+	Steps    []step.Template
+	MetaData jobdata.MetaData
+}
+
+// todo: akelmore - can creating a job fail?
+func New(t Template) (Job, error) {
+	j := Job{}
+	j.Template = t
+	j.JobLog.Name = "job_log"
+
+	return j, nil
 }
 
 // InstData is the combination of the instance data itself and the metadata associated with it.
@@ -33,51 +40,29 @@ type Job struct {
 	JobLog  ulog.StepLog // log for the job outside of instances of it being run (used for polling)
 	History []InstData
 
-	JobConfig Config
+	Template Template
 }
 
-// NewJob creates a new job and initializes it with necessary values.
-func NewJob(name string, origin string) (*Job, error) {
-	job := Job{}
-	job.JobConfig.Data = jobdata.Data{Name: name, Origin: origin, LocalPath: filepath.Join("jobs/", name)}
-	job.JobLog.Name = "job_log"
-
-	if err := job.UpdateConfig(); err != nil {
-		return nil, errors.Wrap(err, "couldn't update the job's config when creating a new job")
-	}
-
-	// go through and set the origin on every SCM so its aware of where we got this job from
-	for i := range job.JobConfig.Steps {
-		if scm, ok := job.JobConfig.Steps[i].Plugin.(scm.SCMer); ok {
-			if err := scm.SetOrigin(origin); err != nil {
-				return nil, errors.Wrapf(err, "couldn't Set Origin on source control manager %s", job.JobConfig.Steps[i].Plugin.GetName())
-			}
-		}
-	}
-
-	return &job, nil
-}
-
-// UpdateConfig updates the configuration information for the job. This needs to be done every time in case
+// UpdateTemplate updates the configuration information for the job. This needs to be done every time in case
 // it has changed from the previous run.
-func (j *Job) UpdateConfig() error {
+func (j *Job) UpdateTemplate() error {
 	// first update the repository that this job is based on
 	// todo: akelmore - make updating the config based on what type of SCM this is instead of hard using git
 	// todo: akelmore - make updating the config use a logging that can be passed back to the job
-	cmd := exec.Command("git", "clone", j.JobConfig.Data.Origin, j.JobConfig.Data.LocalPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "couldn't git clone origin \"%s\" to local path \"%s\"", j.JobConfig.Data.Origin, j.JobConfig.Data.LocalPath)
-	}
+	// cmd := exec.Command("git", "clone", j.MetaData.Origin, j.MetaData.LocalPath)
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+	// if err := cmd.Run(); err != nil {
+	// 	return errors.Wrapf(err, "couldn't git clone origin \"%s\" to local path \"%s\"", j.MetaData.Origin, j.MetaData.LocalPath)
+	// }
 
-	file := filepath.Join(j.JobConfig.Data.LocalPath, ".catarang.json")
+	file := filepath.Join(j.Template.MetaData.LocalPath, ".catarang.json")
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return errors.Wrapf(err, "error reading in config file \"%s\"", file)
 	}
 
-	if err = json.Unmarshal(data, &j.JobConfig); err != nil {
+	if err = json.Unmarshal(data, &j.Template); err != nil {
 		return errors.Wrapf(err, "error unmarshaling json from \"%s\"", file)
 	}
 
@@ -86,21 +71,24 @@ func (j *Job) UpdateConfig() error {
 
 // GetName returns the name of the job
 func (j Job) GetName() string {
-	return j.JobConfig.Data.Name
+	return j.Template.MetaData.Name
 }
 
 // Run is the entry point to start the job
 func (j *Job) Run() {
-	j.JobConfig.Data.TimesRun++
-	j.History = append(j.History, InstData{Num: j.JobConfig.Data.TimesRun})
-	inst := &j.History[len(j.History)-1].Inst
-	inst.InstConfig = j.JobConfig
+	j.Template.MetaData.TimesRun++
+
+	j.UpdateTemplate()
+
+	inst := NewInstance(j.Template)
+	// todo: akelmore - handle nil inst
+	j.History = append(j.History, InstData{Num: j.Template.MetaData.TimesRun, Inst: *inst})
 
 	inst.Start()
 }
 
 // Clean will delete all local job data
 func (j *Job) Clean() {
-	log.Printf("Cleaning Job \"%s\" from local path \"%s\"\n", j.GetName(), j.JobConfig.Data.LocalPath)
-	os.RemoveAll(j.JobConfig.Data.LocalPath)
+	log.Printf("Cleaning Job \"%s\" from local path \"%s\"\n", j.GetName(), j.Template.MetaData.LocalPath)
+	os.RemoveAll(j.Template.MetaData.LocalPath)
 }

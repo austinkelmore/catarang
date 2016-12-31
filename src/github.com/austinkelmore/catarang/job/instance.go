@@ -5,7 +5,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/plugin"
+	"github.com/austinkelmore/catarang/plugin/scm"
 	"github.com/austinkelmore/catarang/ulog"
 	"github.com/pkg/errors"
 )
@@ -52,11 +54,32 @@ type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
 
-	InstConfig Config
-	Steps      []InstJobStep
+	MetaData jobdata.MetaData
+	Steps    []InstJobStep
 
 	Status Status
 	Error  error
+}
+
+// todo: akelmore - rename from NewInstance
+// todo: akelmore - handle an error being thrown somewhere in here and return it
+func NewInstance(t Template) *Instance {
+	i := Instance{MetaData: t.MetaData}
+
+	path, err := filepath.Abs(i.MetaData.LocalPath)
+	if err != nil {
+		i.Error = errors.Wrapf(err, "can't get absolute path from \"%s\"", i.MetaData.LocalPath)
+		i.Status = FAILED
+		return nil
+	}
+
+	for _, step := range t.Steps {
+		instStep := InstJobStep{Action: step.Plugin()}
+		instStep.Log.Name = step.Plugin().GetName()
+		instStep.Log.WorkingDir = path
+		i.Steps = append(i.Steps, instStep)
+	}
+	return &i
 }
 
 // Start is an entry point for the instance
@@ -65,27 +88,32 @@ func (i *Instance) Start() {
 	defer func() { i.EndTime = time.Now() }()
 	i.Status = RUNNING
 
-	err := os.MkdirAll(i.InstConfig.Data.LocalPath, 0777)
+	err := os.MkdirAll(i.MetaData.LocalPath, 0777)
 	if err != nil {
-		i.Error = errors.Wrapf(err, "can't create directory for job at path \"%s\"", i.InstConfig.Data.LocalPath)
+		i.Error = errors.Wrapf(err, "can't create directory for job at path \"%s\"", i.MetaData.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
-	path, err := filepath.Abs(i.InstConfig.Data.LocalPath)
-	if err != nil {
-		i.Error = errors.Wrapf(err, "can't get absolute path from \"%s\"", i.InstConfig.Data.LocalPath)
-		i.Status = FAILED
-		return
+	// for i := range job.JobConfig.Steps {
+	// 	if scm, ok := job.JobConfig.Steps[i].Plugin.(scm.SCMer); ok {
+	// 		if err := scm.SetOrigin(origin); err != nil {
+	// 			return nil, errors.Wrapf(err, "couldn't Set Origin on source control manager %s", job.JobConfig.Steps[i].Plugin.GetName())
+	// 		}
+	// 	}
+	// }
+
+	// todo: akelmore - remove hard coded
+	if i.MetaData.TimesRun == 1 {
+		for index := range i.Steps {
+			if scm, ok := i.Steps[index].Action.(scm.SCMer); ok {
+				scm.FirstTimeSetup(&i.Steps[index].Log)
+			}
+		}
 	}
 
-	for index := range i.InstConfig.Steps {
-		step := InstJobStep{Action: i.InstConfig.Steps[index].Plugin}
-		step.Log.Name = i.InstConfig.Steps[index].Plugin.GetName()
-		step.Log.WorkingDir = path
-		i.Steps = append(i.Steps, step)
-
-		if err = i.Steps[index].Action.Run(i.InstConfig.Data, &i.Steps[index].Log); err != nil {
+	for index := range i.Steps {
+		if err = i.Steps[index].Action.Run(i.MetaData, &i.Steps[index].Log); err != nil {
 			i.Error = errors.Wrapf(err, "couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
 			i.Status = FAILED
 			return

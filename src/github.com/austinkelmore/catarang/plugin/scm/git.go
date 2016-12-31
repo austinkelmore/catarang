@@ -63,7 +63,7 @@ func (g *Git) UpdateExisting(logger *ulog.StepLog) error {
 }
 
 // Run is the entry point into the git plugin
-func (g *Git) Run(job jobdata.Data, logger *ulog.StepLog) error {
+func (g *Git) Run(job jobdata.MetaData, logger *ulog.StepLog) error {
 	if err := g.UpdateExisting(logger); err != nil {
 		return errors.Wrap(err, "error running git's UpdateExisting")
 	}

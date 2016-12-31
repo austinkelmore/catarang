@@ -5,8 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/austinkelmore/catarang/job"
+	"github.com/austinkelmore/catarang/jobdata"
+	"github.com/austinkelmore/catarang/plugin/scm"
+	"github.com/austinkelmore/catarang/step"
 	"github.com/pkg/errors"
 	"golang.org/x/net/websocket"
 )
@@ -33,12 +37,16 @@ func AddJob(name string, repo string) error {
 		}
 	}
 
-	job, err := job.NewJob(name, repo)
+	git := scm.Git{Origin: repo}
+	stepTemplate := step.New(&git)
+	template := job.Template{MetaData: jobdata.MetaData{Name: name, ID: len(cats.Jobs), LocalPath: filepath.Join("jobs/", name)}}
+	template.Steps = append(template.Steps, stepTemplate)
+	job, err := job.New(template)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't create job %s", name)
 	}
 
-	cats.Jobs = append(cats.Jobs, *job)
+	cats.Jobs = append(cats.Jobs, job)
 	saveConfig()
 	log.Println("Added job: ", name)
 	return nil

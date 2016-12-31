@@ -5,13 +5,13 @@
 	<body>
 		<script type="text/javascript" src="../static/cat.js"></script>
 		<script type="text/javascript" src="../static/job.js"></script>
-		This is the job: {{.JobConfig.Data.Name}}
+		This is the job: {{.Template.MetaData.Name}}
 		<br><br>
 
 		<strong>Job:</strong>
-		<button type="button" onclick="startJob('{{.JobConfig.Data.Name}}');">Start Job</button>
-		<button type="button" onclick="deleteJob('{{.JobConfig.Data.Name}}');">Delete Job</button>
-		<button type="button" onclick="cleanJob('{{.JobConfig.Data.Name}}');">Clean Job</button>
+		<button type="button" onclick="startJob('{{.Template.MetaData.Name}}');">Start Job</button>
+		<button type="button" onclick="deleteJob('{{.Template.MetaData.Name}}');">Delete Job</button>
+		<button type="button" onclick="cleanJob('{{.Template.MetaData.Name}}');">Clean Job</button>
 		<br>
 		<br>
 		<strong>Job instances output:</strong>

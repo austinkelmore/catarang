@@ -1,12 +1,11 @@
 package jobdata
 
-// Data is all of the meta data for a job, but not defined by steps
-type Data struct {
+// todo: akelmore - change name from MetaData to something more descriptive
+type MetaData struct {
 	Name string
 	ID   int
 
 	LocalPath string
-	Origin    string
 
 	TimesRun int
 }

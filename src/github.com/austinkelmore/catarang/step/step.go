@@ -1,4 +1,4 @@
-package job
+package step
 
 import (
 	"encoding/json"
@@ -10,14 +10,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-// StepTemplate is a single step in a job that is defined by a name which looks itself up in the pluginlist
-type StepTemplate struct {
-	PluginName string         `json:"plugin_name"`
-	Plugin     plugin.JobStep `json:"plugin"`
+type Template struct {
+	PluginName string `json:"plugin_name"`
+	plugin     plugin.JobStep
+}
+
+func New(p plugin.JobStep) Template {
+	t := Template{PluginName: p.GetName(), plugin: p}
+	return t
+}
+
+func (s Template) Plugin() plugin.JobStep {
+	return s.plugin
 }
 
 // UnmarshalJSON converts arbitrary JSON into Go objects based on the plugins that are known in pluginlist.
-func (s *StepTemplate) UnmarshalJSON(b []byte) error {
+func (s *Template) UnmarshalJSON(b []byte) error {
 	parsed, err := gabs.ParseJSON(b)
 	if err != nil {
 		return errors.Wrap(err, "error parsing JSON while unmarshaling it")
@@ -40,7 +48,7 @@ func (s *StepTemplate) UnmarshalJSON(b []byte) error {
 	}
 
 	inter := reflect.New(plug.Elem())
-	s.Plugin = inter.Interface().(plugin.JobStep)
+	s.plugin = inter.Interface().(plugin.JobStep)
 
 	// shove the data inside the config into the plugin
 	data := parsed.Search("plugin")
@@ -49,7 +57,7 @@ func (s *StepTemplate) UnmarshalJSON(b []byte) error {
 	}
 
 	bytes := data.Bytes()
-	err = json.Unmarshal(bytes, s.Plugin)
+	err = json.Unmarshal(bytes, s.plugin)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't Unmarshal \"plugin\" blob for plugin %s", s.PluginName)
 	}
