@@ -3,8 +3,8 @@ package scm
 import (
 	"bytes"
 
-	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/cmd"
+	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/pkg/errors"
 )
 

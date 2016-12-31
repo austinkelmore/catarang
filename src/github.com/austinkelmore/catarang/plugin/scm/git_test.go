@@ -7,8 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/austinkelmore/catarang/plugin/scm"
+	"path/filepath"
+
 	"github.com/austinkelmore/catarang/cmd"
+	"github.com/austinkelmore/catarang/plugin/scm"
 )
 
 // TestMain is the entry point for this file's tests
@@ -18,7 +20,7 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
-var localPath = "../tests/"
+var localPath = "tests/"
 
 func cleanUpTests() {
 	os.RemoveAll(localPath)
@@ -48,7 +50,7 @@ func createTestRepo(t *testing.T, origin string) error {
 
 	filename := "file.txt"
 	// write, add, and commit file initially
-	err = ioutil.WriteFile(origin+filename, []byte("Test file for git tests."), 0644)
+	err = ioutil.WriteFile(filepath.Join(origin, filename), []byte("Test file for git tests."), 0644)
 	if err != nil {
 		t.Log("Couldn't write test file in test repo.")
 		return err
@@ -65,7 +67,7 @@ func createTestRepo(t *testing.T, origin string) error {
 	}
 
 	// write, add, and commit file for a second time
-	err = ioutil.WriteFile(origin+filename, []byte("Second edit, test file for git tests."), 0644)
+	err = ioutil.WriteFile(filepath.Join(origin, filename), []byte("Second edit, test file for git tests."), 0644)
 	if err != nil {
 		t.Log("Couldn't write test file a second time.")
 		return err
@@ -92,10 +94,25 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 		return nil, err
 	}
 
-	git := &scm.Git{}
-	git.SetOrigin(origin)
+	clonePath, err := filepath.Abs(clone)
+	if err != nil {
+		t.Errorf("Can't get absolute path from \"%s\": %v", clone, err.Error())
+		return nil, err
+	}
+	originPath, err := filepath.Abs(origin)
+	if err != nil {
+		t.Errorf("Can't get absolute path from \"%s\": %v", origin, err.Error())
+		return nil, err
+	}
+	err = os.MkdirAll(clonePath, 0777)
+	if err != nil {
+		t.Errorf("Can't create directory for job at path \"%s\": %v", clonePath, err.Error())
+		return nil, err
+	}
+
+	git := &scm.Git{Auth: scm.Authentication{Username: "test", Email: "test@example.com"}, Origin: originPath}
 	logger := cmd.Log{}
-	logger.WorkingDir = clone
+	logger.WorkingDir = clonePath
 	err = git.FirstTimeSetup(&logger)
 	return git, err
 }
@@ -132,11 +149,10 @@ func TestGitExists(t *testing.T) {
 }
 
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.Git{}
-	git.SetOrigin("bogus_repo_path/")
+	git := scm.Git{Origin: "bogus_repo_path"}
 
 	logger := cmd.Log{}
-	logger.WorkingDir = localPath + "FirstTimeSetupFail/"
+	logger.WorkingDir = filepath.Join(localPath + "FirstTimeSetupFail")
 	err := git.FirstTimeSetup(&logger)
 	if err == nil {
 		t.Error("Expected failure for bogus repo path. No error returned.")
@@ -145,8 +161,8 @@ func TestFirstTimeSetupFail(t *testing.T) {
 
 // todo: akelmore - refactor
 func TestSetupPollAndSync(t *testing.T) {
-	origin := localPath + "PollOrigin/"
-	testrepo := localPath + "Poll/"
+	origin := filepath.Join(localPath + "PollOrigin/")
+	testrepo := filepath.Join(localPath + "Poll/")
 	git, err := setupBothRepos(t, origin, testrepo)
 	if err != nil {
 		t.Error(err)
@@ -196,8 +212,8 @@ func TestSetupPollAndSync(t *testing.T) {
 }
 
 func TestPollEmpty(t *testing.T) {
-	origin := localPath + "PollEmptyOrigin"
-	clone := localPath + "PollEmpty"
+	origin := filepath.Join(localPath + "PollEmptyOrigin")
+	clone := filepath.Join(localPath + "PollEmpty")
 	initRepo(t, origin)
 	git, err := setupGitClone(t, origin, clone)
 	if err != nil {
