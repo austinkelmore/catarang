@@ -1,15 +1,15 @@
-package jobdata
+package template
 
 import (
 	"encoding/json"
 )
 
-type JobTemplate struct {
-	Steps     []StepTemplate
+type Job struct {
+	Steps     []Step
 	LocalPath string
 }
 
-type StepTemplate struct {
+type Step struct {
 	PluginName string          `json:"plugin_name"`
 	PluginData json.RawMessage `json:"plugin"`
 }

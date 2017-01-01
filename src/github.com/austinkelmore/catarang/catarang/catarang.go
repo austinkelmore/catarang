@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/austinkelmore/catarang/job"
-	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/plugin/scm"
+	"github.com/austinkelmore/catarang/template"
 	"github.com/pkg/errors"
 	"golang.org/x/net/websocket"
 )
@@ -41,8 +41,8 @@ func AddJob(name string, repo string) error {
 	if err != nil {
 		return errors.Wrapf(err, "couldn't marshal scm.git to json")
 	}
-	stepTemplate := jobdata.StepTemplate{PluginName: git.GetName(), PluginData: gitjson}
-	template := jobdata.JobTemplate{LocalPath: filepath.Join("jobs/", name)}
+	stepTemplate := template.Step{PluginName: git.GetName(), PluginData: gitjson}
+	template := template.Job{LocalPath: filepath.Join("jobs/", name)}
 	template.Steps = append(template.Steps, stepTemplate)
 	job, err := job.New(template)
 	if err != nil {

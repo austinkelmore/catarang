@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/austinkelmore/catarang/cmd"
-	"github.com/austinkelmore/catarang/jobdata"
+	"github.com/austinkelmore/catarang/template"
 )
 
-// New creates a Job from a JobTemplate
-func New(t jobdata.JobTemplate) (Job, error) {
+// New creates a Job from a job template
+func New(t template.Job) (Job, error) {
 	j := Job{}
 	j.Template = t
 	j.JobLog.Name = "job_log"
@@ -38,7 +38,7 @@ type Job struct {
 	History []InstData
 	JobData JobData
 
-	Template jobdata.JobTemplate
+	Template template.Job
 }
 
 // GetName returns the name of the job

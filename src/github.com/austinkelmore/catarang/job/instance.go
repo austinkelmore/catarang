@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/austinkelmore/catarang/cmd"
-	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/plugin/scm"
 	"github.com/austinkelmore/catarang/pluginlist"
+	"github.com/austinkelmore/catarang/template"
 	"github.com/pkg/errors"
 )
 
@@ -56,7 +56,7 @@ type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
 
-	Template jobdata.JobTemplate
+	Template template.Job
 
 	Steps []InstJobStep
 
@@ -65,7 +65,7 @@ type Instance struct {
 }
 
 // NewInstance creates a new instance from a job template
-func NewInstance(t jobdata.JobTemplate) (*Instance, error) {
+func NewInstance(t template.Job) (*Instance, error) {
 	i := Instance{Template: t}
 
 	var err error
@@ -75,7 +75,7 @@ func NewInstance(t jobdata.JobTemplate) (*Instance, error) {
 	return &i, nil
 }
 
-func createStepsFromTemplate(t jobdata.JobTemplate) ([]InstJobStep, error) {
+func createStepsFromTemplate(t template.Job) ([]InstJobStep, error) {
 	s := []InstJobStep{}
 	path, err := filepath.Abs(t.LocalPath)
 	if err != nil {
@@ -166,7 +166,7 @@ func (i *Instance) updateTemplate() (bool, error) {
 		return false, errors.Wrapf(err, "error reading in config file \"%s\"", file)
 	}
 
-	t := jobdata.JobTemplate{LocalPath: i.Template.LocalPath}
+	t := template.Job{LocalPath: i.Template.LocalPath}
 
 	if err = json.Unmarshal(data, &t); err != nil {
 		return false, errors.Wrapf(err, "error unmarshaling json from \"%s\"", file)
