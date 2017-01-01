@@ -30,7 +30,6 @@ const (
 	SUCCESSFUL
 )
 
-// todo: akelmore - get generate stringer working with Status instead of hard coding it
 func (s Status) String() string {
 	switch s {
 	case INITIALIZED:
@@ -47,7 +46,6 @@ func (s Status) String() string {
 }
 
 // InstJobStep is a distinct use of a plugin to do a single step or action within a job
-// todo: akelmore - figure out why InstJobStep is different from Step
 type InstJobStep struct {
 	Log    cmd.Log
 	Action plugin.JobStep
@@ -66,32 +64,28 @@ type Instance struct {
 	Error  error
 }
 
-// todo: akelmore - rename from NewInstance
-// todo: akelmore - handle an error being thrown somewhere in here and return it
-func NewInstance(t jobdata.JobTemplate) *Instance {
+// NewInstance creates a new instance from a job template
+func NewInstance(t jobdata.JobTemplate) (*Instance, error) {
 	i := Instance{Template: t}
 
-	i.Steps = createStepsFromTemplate(t)
-	return &i
+	var err error
+	if i.Steps, err = createStepsFromTemplate(t); err != nil {
+		return &i, errors.Wrapf(err, "error creating steps from template")
+	}
+	return &i, nil
 }
 
-func createStepsFromTemplate(t jobdata.JobTemplate) []InstJobStep {
-	path, _ := filepath.Abs(t.LocalPath)
-	// todo: akelmore - handle the error
-	// if err != nil {
-	// 	i.Error = errors.Wrapf(err, "can't get absolute path from \"%s\"", i.LocalPath)
-	// 	i.Status = FAILED
-	// 	return nil
-	// }
-
+func createStepsFromTemplate(t jobdata.JobTemplate) ([]InstJobStep, error) {
 	s := []InstJobStep{}
+	path, err := filepath.Abs(t.LocalPath)
+	if err != nil {
+		return s, errors.Wrapf(err, "can't get absolute path from \"%s\"", t.LocalPath)
+	}
+
 	for _, step := range t.Steps {
 		plug, ok := pluginlist.Plugins()[step.PluginName]
 		if !ok {
-			// todo: akelmore - handle the error
-			// i.Error = errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", step.PluginName)
-			// i.Status = FAILED
-			return s
+			return s, errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", step.PluginName)
 		}
 
 		val := reflect.New(plug.Elem())
@@ -99,10 +93,7 @@ func createStepsFromTemplate(t jobdata.JobTemplate) []InstJobStep {
 
 		err := json.Unmarshal(step.PluginData, jobstep)
 		if err != nil {
-			// todo: akelmore - handle the error
-			// i.Error = errors.Wrapf(err, "couldn't Unmarshal \"plugin\" blob for plugin %s", step.PluginName)
-			// i.Status = FAILED
-			return s
+			return s, errors.Wrapf(err, "couldn't Unmarshal \"plugin\" blob for plugin %s", step.PluginName)
 		}
 
 		instStep := InstJobStep{Action: jobstep}
@@ -110,7 +101,7 @@ func createStepsFromTemplate(t jobdata.JobTemplate) []InstJobStep {
 		instStep.Log.WorkingDir = path
 		s = append(s, instStep)
 	}
-	return s
+	return s, nil
 }
 
 // Start is an entry point for the instance
@@ -128,8 +119,11 @@ func (i *Instance) Start(doFirstTimeSetup bool) {
 	if doFirstTimeSetup {
 		for index := range i.Steps {
 			if scm, ok := i.Steps[index].Action.(scm.SCMer); ok {
-				// todo: akelmore - catch error and handle
-				scm.FirstTimeSetup(&i.Steps[index].Log)
+				if err := scm.FirstTimeSetup(&i.Steps[index].Log); err != nil {
+					i.Error = errors.Wrapf(err, "can't run first FirstTimeSetup on scm %v", scm.GetName())
+					i.Status = FAILED
+					return
+				}
 			}
 		}
 	}
@@ -143,7 +137,11 @@ func (i *Instance) Start(doFirstTimeSetup bool) {
 			return
 		}
 		if needsUpdate {
-			i.Steps = createStepsFromTemplate(i.Template)
+			if i.Steps, err = createStepsFromTemplate(i.Template); err != nil {
+				i.Error = errors.Wrapf(err, "error creating steps from template")
+				i.Status = FAILED
+				return
+			}
 		}
 	}
 

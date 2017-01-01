@@ -38,7 +38,7 @@ func main() {
 		web.SetWebDir("../web")
 	}
 	if *clean {
-		os.Remove(catarang.ConfigFileName)
+		catarang.Clean()
 		os.RemoveAll("jobs/")
 		os.RemoveAll("results/")
 

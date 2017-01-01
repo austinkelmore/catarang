@@ -8,7 +8,7 @@ import (
 	"github.com/austinkelmore/catarang/jobdata"
 )
 
-// todo: akelmore - can creating a job fail?
+// New creates a Job from a JobTemplate
 func New(t jobdata.JobTemplate) (Job, error) {
 	j := Job{}
 	j.Template = t
@@ -24,6 +24,7 @@ type InstData struct {
 	Num  int
 }
 
+// JobData is all of the metadata about a job (that is outside of the template)
 type JobData struct {
 	ID       int
 	Name     string
@@ -48,8 +49,12 @@ func (j Job) GetName() string {
 // Run is the entry point to start the job
 func (j *Job) Run() {
 	j.JobData.TimesRun++
-	inst := NewInstance(j.Template)
-	// todo: akelmore - handle nil inst
+	inst, err := NewInstance(j.Template)
+	if err != nil {
+		log.Printf("Error creating new instance: %v\n", err.Error())
+		return
+	}
+
 	j.History = append(j.History, InstData{Num: j.JobData.TimesRun, Inst: *inst})
 	j.History[len(j.History)-1].Inst.Start(j.JobData.TimesRun == 1)
 

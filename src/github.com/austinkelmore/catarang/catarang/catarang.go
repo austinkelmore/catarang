@@ -37,8 +37,10 @@ func AddJob(name string, repo string) error {
 	}
 
 	git := scm.Git{Origin: repo}
-	// todo: akelmore - check error
-	gitjson, _ := json.Marshal(git)
+	gitjson, err := json.Marshal(git)
+	if err != nil {
+		return errors.Wrapf(err, "couldn't marshal scm.git to json")
+	}
 	stepTemplate := jobdata.StepTemplate{PluginName: git.GetName(), PluginData: gitjson}
 	template := jobdata.JobTemplate{LocalPath: filepath.Join("jobs/", name)}
 	template.Steps = append(template.Steps, stepTemplate)
@@ -122,13 +124,12 @@ func SendToJobConns(jobName string, data interface{}) {
 	}
 }
 
-// todo: akelmore - remove hack to clean project quickly and then make this non-exportable
-var ConfigFileName = "catarang_config.json"
+var configFileName = "catarang_config.json"
 
 // ReadInConfig will read in the config file and put it into the Catarang config for the server
 // todo: akelmore - fix threading with the reading/writing of the config
 func ReadInConfig() {
-	data, err := ioutil.ReadFile(ConfigFileName)
+	data, err := ioutil.ReadFile(configFileName)
 	if err != nil && os.IsNotExist(err) {
 		// create a new config and save it out
 		log.Println("No Catarang config detected, creating new one.")
@@ -137,7 +138,7 @@ func ReadInConfig() {
 	}
 
 	if err = json.Unmarshal(data, &cats); err != nil {
-		log.Printf("Error reading in %v: %v\n", ConfigFileName, err.Error())
+		log.Printf("Error reading in %v: %v\n", configFileName, err.Error())
 	}
 }
 
@@ -148,8 +149,13 @@ func saveConfig() {
 		return
 	}
 
-	err = ioutil.WriteFile(ConfigFileName, []byte(data), 0644)
+	err = ioutil.WriteFile(configFileName, []byte(data), 0644)
 	if err != nil {
-		log.Printf("Error writing config file %v: %v\n", ConfigFileName, err.Error())
+		log.Printf("Error writing config file %v: %v\n", configFileName, err.Error())
 	}
+}
+
+// Clean resets the entire app to a fresh install state
+func Clean() {
+	os.Remove(configFileName)
 }
