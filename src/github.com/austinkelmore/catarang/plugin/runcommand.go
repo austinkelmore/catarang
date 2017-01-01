@@ -3,7 +3,6 @@ package plugin
 import (
 	"strings"
 
-	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/cmd"
 	"github.com/pkg/errors"
 )
@@ -14,7 +13,7 @@ type RunCommand struct {
 }
 
 // Run is the entry point into the RunCommand plugin
-func (r *RunCommand) Run(job jobdata.MetaData, logger *cmd.Log) error {
+func (r *RunCommand) Run(logger *cmd.Log) error {
 	for _, cmd := range r.Commands {
 		fields := strings.Fields(cmd)
 		if len(fields) > 0 {

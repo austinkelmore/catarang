@@ -1,11 +1,15 @@
 package jobdata
 
-// todo: akelmore - change name from MetaData to something more descriptive
-type MetaData struct {
-	Name string
-	ID   int
+import (
+	"encoding/json"
+)
 
+type JobTemplate struct {
+	Steps     []StepTemplate
 	LocalPath string
+}
 
-	TimesRun int
+type StepTemplate struct {
+	PluginName string          `json:"plugin_name"`
+	PluginData json.RawMessage `json:"plugin"`
 }

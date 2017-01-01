@@ -1,12 +1,10 @@
 package plugin
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/cmd"
 	"github.com/pkg/errors"
 )
@@ -51,13 +49,14 @@ func save(srcDir, toSave, destDir string) error {
 }
 
 // Run is the entry point into the Artifact plugin
-func (a *Artifact) Run(job jobdata.MetaData, logger *cmd.Log) error {
-	destPath := filepath.Join(destStorage, job.Name, fmt.Sprintf("%d/", job.TimesRun))
-	for _, loc := range a.ToSave {
-		if err := save(job.LocalPath, loc, destPath); err != nil {
-			return errors.Wrapf(err, "couldn't save %s", loc)
-		}
-	}
+func (a *Artifact) Run(logger *cmd.Log) error {
+	// todo: akelmore - fix artifacts again
+	// destPath := filepath.Join(destStorage, job.Name, fmt.Sprintf("%d/", job.TimesRun))
+	// for _, loc := range a.ToSave {
+	// 	if err := save(job.LocalPath, loc, destPath); err != nil {
+	// 		return errors.Wrapf(err, "couldn't save %s", loc)
+	// 	}
+	// }
 
 	return nil
 }

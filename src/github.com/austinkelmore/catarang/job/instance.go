@@ -1,14 +1,18 @@
 package job
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/austinkelmore/catarang/cmd"
 	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/plugin"
 	"github.com/austinkelmore/catarang/plugin/scm"
+	"github.com/austinkelmore/catarang/pluginlist"
 	"github.com/pkg/errors"
 )
 
@@ -54,8 +58,9 @@ type Instance struct {
 	StartTime time.Time
 	EndTime   time.Time
 
-	MetaData jobdata.MetaData
-	Steps    []InstJobStep
+	Template jobdata.JobTemplate
+
+	Steps []InstJobStep
 
 	Status Status
 	Error  error
@@ -63,57 +68,87 @@ type Instance struct {
 
 // todo: akelmore - rename from NewInstance
 // todo: akelmore - handle an error being thrown somewhere in here and return it
-func NewInstance(t Template) *Instance {
-	i := Instance{MetaData: t.MetaData}
+func NewInstance(t jobdata.JobTemplate) *Instance {
+	i := Instance{Template: t}
 
-	path, err := filepath.Abs(i.MetaData.LocalPath)
-	if err != nil {
-		i.Error = errors.Wrapf(err, "can't get absolute path from \"%s\"", i.MetaData.LocalPath)
-		i.Status = FAILED
-		return nil
-	}
-
-	for _, step := range t.Steps {
-		instStep := InstJobStep{Action: step.Plugin()}
-		instStep.Log.Name = step.Plugin().GetName()
-		instStep.Log.WorkingDir = path
-		i.Steps = append(i.Steps, instStep)
-	}
+	i.Steps = createStepsFromTemplate(t)
 	return &i
 }
 
+func createStepsFromTemplate(t jobdata.JobTemplate) []InstJobStep {
+	path, _ := filepath.Abs(t.LocalPath)
+	// todo: akelmore - handle the error
+	// if err != nil {
+	// 	i.Error = errors.Wrapf(err, "can't get absolute path from \"%s\"", i.LocalPath)
+	// 	i.Status = FAILED
+	// 	return nil
+	// }
+
+	s := []InstJobStep{}
+	for _, step := range t.Steps {
+		plug, ok := pluginlist.Plugins()[step.PluginName]
+		if !ok {
+			// todo: akelmore - handle the error
+			// i.Error = errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", step.PluginName)
+			// i.Status = FAILED
+			return s
+		}
+
+		val := reflect.New(plug.Elem())
+		jobstep := val.Interface().(plugin.JobStep)
+
+		err := json.Unmarshal(step.PluginData, jobstep)
+		if err != nil {
+			// todo: akelmore - handle the error
+			// i.Error = errors.Wrapf(err, "couldn't Unmarshal \"plugin\" blob for plugin %s", step.PluginName)
+			// i.Status = FAILED
+			return s
+		}
+
+		instStep := InstJobStep{Action: jobstep}
+		instStep.Log.Name = instStep.Action.GetName()
+		instStep.Log.WorkingDir = path
+		s = append(s, instStep)
+	}
+	return s
+}
+
 // Start is an entry point for the instance
-func (i *Instance) Start() {
+func (i *Instance) Start(doFirstTimeSetup bool) {
 	i.StartTime = time.Now()
 	defer func() { i.EndTime = time.Now() }()
 	i.Status = RUNNING
 
-	err := os.MkdirAll(i.MetaData.LocalPath, 0777)
-	if err != nil {
-		i.Error = errors.Wrapf(err, "can't create directory for job at path \"%s\"", i.MetaData.LocalPath)
+	if err := os.MkdirAll(i.Template.LocalPath, 0777); err != nil {
+		i.Error = errors.Wrapf(err, "can't create directory for job at path \"%s\"", i.Template.LocalPath)
 		i.Status = FAILED
 		return
 	}
 
-	// for i := range job.JobConfig.Steps {
-	// 	if scm, ok := job.JobConfig.Steps[i].Plugin.(scm.SCMer); ok {
-	// 		if err := scm.SetOrigin(origin); err != nil {
-	// 			return nil, errors.Wrapf(err, "couldn't Set Origin on source control manager %s", job.JobConfig.Steps[i].Plugin.GetName())
-	// 		}
-	// 	}
-	// }
-
-	// todo: akelmore - remove hard coded
-	if i.MetaData.TimesRun == 1 {
+	if doFirstTimeSetup {
 		for index := range i.Steps {
 			if scm, ok := i.Steps[index].Action.(scm.SCMer); ok {
+				// todo: akelmore - catch error and handle
 				scm.FirstTimeSetup(&i.Steps[index].Log)
 			}
 		}
 	}
 
+	for needsUpdate := true; needsUpdate; {
+		var err error
+		needsUpdate, err = i.updateTemplate()
+		if err != nil {
+			i.Error = errors.Wrapf(err, "error updating the job template")
+			i.Status = FAILED
+			return
+		}
+		if needsUpdate {
+			i.Steps = createStepsFromTemplate(i.Template)
+		}
+	}
+
 	for index := range i.Steps {
-		if err = i.Steps[index].Action.Run(i.MetaData, &i.Steps[index].Log); err != nil {
+		if err := i.Steps[index].Action.Run(&i.Steps[index].Log); err != nil {
 			i.Error = errors.Wrapf(err, "couldn't run step index %v with action name %s", index, i.Steps[index].Action.GetName())
 			i.Status = FAILED
 			return
@@ -121,4 +156,29 @@ func (i *Instance) Start() {
 	}
 
 	i.Status = SUCCESSFUL
+}
+
+// updateTemplate updates the configuration information for the job.
+// This needs to be done every time in case it has changed from the previous run.
+func (i *Instance) updateTemplate() (bool, error) {
+	// todo: akelmore - make updating the config use a logging that can be passed back to the job
+	file := filepath.Join(i.Template.LocalPath, ".catarang.json")
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return false, errors.Wrapf(err, "error reading in config file \"%s\"", file)
+	}
+
+	t := jobdata.JobTemplate{LocalPath: i.Template.LocalPath}
+
+	if err = json.Unmarshal(data, &t); err != nil {
+		return false, errors.Wrapf(err, "error unmarshaling json from \"%s\"", file)
+	}
+
+	// test whether we need to redo our setup or not
+	if !reflect.DeepEqual(t, i.Template) {
+		i.Template = t
+		return true, nil
+	}
+
+	return false, nil
 }

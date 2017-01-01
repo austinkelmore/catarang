@@ -10,7 +10,6 @@ import (
 	"github.com/austinkelmore/catarang/job"
 	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/austinkelmore/catarang/plugin/scm"
-	"github.com/austinkelmore/catarang/step"
 	"github.com/pkg/errors"
 	"golang.org/x/net/websocket"
 )
@@ -38,13 +37,17 @@ func AddJob(name string, repo string) error {
 	}
 
 	git := scm.Git{Origin: repo}
-	stepTemplate := step.New(&git)
-	template := job.Template{MetaData: jobdata.MetaData{Name: name, ID: len(cats.Jobs), LocalPath: filepath.Join("jobs/", name)}}
+	// todo: akelmore - check error
+	gitjson, _ := json.Marshal(git)
+	stepTemplate := jobdata.StepTemplate{PluginName: git.GetName(), PluginData: gitjson}
+	template := jobdata.JobTemplate{LocalPath: filepath.Join("jobs/", name)}
 	template.Steps = append(template.Steps, stepTemplate)
 	job, err := job.New(template)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't create job %s", name)
 	}
+	job.JobData.Name = name
+	job.JobData.ID = len(cats.Jobs)
 
 	cats.Jobs = append(cats.Jobs, job)
 	saveConfig()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/austinkelmore/catarang/cmd"
-	"github.com/austinkelmore/catarang/jobdata"
 	"github.com/pkg/errors"
 )
 
@@ -63,7 +62,7 @@ func (g *Git) UpdateExisting(logger *cmd.Log) error {
 }
 
 // Run is the entry point into the git plugin
-func (g *Git) Run(job jobdata.MetaData, logger *cmd.Log) error {
+func (g *Git) Run(logger *cmd.Log) error {
 	if err := g.UpdateExisting(logger); err != nil {
 		return errors.Wrap(err, "error running git's UpdateExisting")
 	}
