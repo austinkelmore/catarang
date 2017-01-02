@@ -23,7 +23,7 @@
 						Job section: {{$jStep.Log.Name}}
 						<br>
 						{{range $cmd := $jStep.Log.Cmds}}
-							+ {{$cmd.Cmd.Args}}
+							+ {{$cmd.Args}}
 							<br>
 							&nbsp&nbsp&nbsp&nbsp{{$cmd.Str}}
 							<br>

@@ -49,16 +49,17 @@ func (c *writer) Write(p []byte) (n int, err error) {
 
 // Cmd holds all of the information needed to record the output of a cmd's process in the format that is needed
 type Cmd struct {
-	Cmd  *exec.Cmd
-	Out  writer
-	Err  writer
+	cmd  *exec.Cmd
+	out  writer
+	err  writer
+	Args []string
 	Str  string
 	Sect []writeSection // this keeps track of what parts of Str were written to by stdout and stderr
 }
 
 // Run is the entry point for starting the cmd's process
 func (c *Cmd) Run() error {
-	return c.Cmd.Run()
+	return c.cmd.Run()
 }
 
 // Log contains an array of commands and metadata about where to run the commands as well as the output from the cmds
@@ -72,12 +73,14 @@ type Log struct {
 func (log *Log) New(name string, arg ...string) *Cmd {
 	log.Cmds = append(log.Cmds, Cmd{})
 	cmd := &log.Cmds[len(log.Cmds)-1]
-	cmd.Out = writer{cmd: cmd, Src: cmdTypeOut}
-	cmd.Err = writer{cmd: cmd, Src: cmdTypeErr}
-	cmd.Cmd = exec.Command(name, arg...)
-	cmd.Cmd.Dir = log.WorkingDir
-	cmd.Cmd.Stdout = &cmd.Out
-	cmd.Cmd.Stderr = &cmd.Err
+
+	cmd.Args = append([]string{name}, arg...)
+	cmd.out = writer{cmd: cmd, Src: cmdTypeOut}
+	cmd.err = writer{cmd: cmd, Src: cmdTypeErr}
+	cmd.cmd = exec.Command(name, arg...)
+	cmd.cmd.Dir = log.WorkingDir
+	cmd.cmd.Stdout = &cmd.out
+	cmd.cmd.Stderr = &cmd.err
 
 	return cmd
 }
