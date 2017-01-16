@@ -10,8 +10,6 @@ import (
 
 	"github.com/austinkelmore/catarang/cmd"
 	"github.com/austinkelmore/catarang/plugin"
-	"github.com/austinkelmore/catarang/plugin/scm"
-	"github.com/austinkelmore/catarang/pluginlist"
 	"github.com/austinkelmore/catarang/template"
 	"github.com/pkg/errors"
 )
@@ -83,9 +81,9 @@ func createStepsFromTemplate(t template.Job) ([]InstJobStep, error) {
 	}
 
 	for _, step := range t.Steps {
-		plug, ok := pluginlist.Plugins()[step.PluginName]
+		plug, ok := plugin.GetAvailable()[step.PluginName]
 		if !ok {
-			return s, errors.Errorf("couldn't find plugin of type \"%s\" in the pluginlist", step.PluginName)
+			return s, errors.Errorf("couldn't find plugin of type \"%s\" in the available map", step.PluginName)
 		}
 
 		val := reflect.New(plug.Elem())
@@ -118,7 +116,7 @@ func (i *Instance) Start(doFirstTimeSetup bool) {
 
 	if doFirstTimeSetup {
 		for index := range i.Steps {
-			if scm, ok := i.Steps[index].Action.(scm.SCMer); ok {
+			if scm, ok := i.Steps[index].Action.(plugin.SCM); ok {
 				if err := scm.FirstTimeSetup(&i.Steps[index].Log); err != nil {
 					i.Error = errors.Wrapf(err, "can't run first FirstTimeSetup on scm %v", scm.GetName())
 					i.Status = FAILED

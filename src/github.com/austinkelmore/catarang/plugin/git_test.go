@@ -1,4 +1,4 @@
-package scm_test
+package plugin_test
 
 import (
 	"io/ioutil"
@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/austinkelmore/catarang/cmd"
-	"github.com/austinkelmore/catarang/plugin/scm"
+	"github.com/austinkelmore/catarang/plugin"
 )
 
 // TestMain is the entry point for this file's tests
@@ -86,7 +86,7 @@ func createTestRepo(t *testing.T, origin string) error {
 	return nil
 }
 
-func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) {
+func setupGitClone(t *testing.T, origin string, clone string) (*plugin.Git, error) {
 	// start the clone from scratch as well
 	err := os.RemoveAll(clone)
 	if err != nil {
@@ -110,14 +110,14 @@ func setupGitClone(t *testing.T, origin string, clone string) (*scm.Git, error) 
 		return nil, err
 	}
 
-	git := &scm.Git{Auth: scm.Authentication{Username: "test", Email: "test@example.com"}, Origin: originPath}
+	git := &plugin.Git{Auth: plugin.Authentication{Username: "test", Email: "test@example.com"}, Origin: originPath}
 	logger := cmd.Log{}
 	logger.WorkingDir = clonePath
 	err = git.FirstTimeSetup(&logger)
 	return git, err
 }
 
-func setupBothRepos(t *testing.T, origin string, clone string) (*scm.Git, error) {
+func setupBothRepos(t *testing.T, origin string, clone string) (*plugin.Git, error) {
 	err := createTestRepo(t, origin)
 	if err != nil {
 		t.Error(err)
@@ -149,7 +149,7 @@ func TestGitExists(t *testing.T) {
 }
 
 func TestFirstTimeSetupFail(t *testing.T) {
-	git := scm.Git{Origin: "bogus_repo_path"}
+	git := plugin.Git{Origin: "bogus_repo_path"}
 
 	logger := cmd.Log{}
 	logger.WorkingDir = filepath.Join(localPath + "FirstTimeSetupFail")

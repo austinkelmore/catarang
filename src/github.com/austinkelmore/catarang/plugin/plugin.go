@@ -8,3 +8,12 @@ type JobStep interface {
 	Run(logger *cmd.Log) error
 	GetName() string
 }
+
+// SCM is an interface for the source control modules
+type SCM interface {
+	FirstTimeSetup(logger *cmd.Log) error
+	Poll(logger *cmd.Log) (bool, error)
+	UpdateExisting(logger *cmd.Log) error
+	SetOrigin(origin string) error
+	JobStep
+}
