@@ -9,9 +9,9 @@ func GetAvailable() map[string]reflect.Type {
 
 var plugins map[string]reflect.Type
 
-func pluginList() []JobStep {
+func pluginList() []JobStepper {
 	// add all known plugins into this array
-	pluginTypes := []JobStep{
+	pluginTypes := []JobStepper{
 		&Git{},
 		&RunCommand{},
 		&Artifact{},
@@ -26,6 +26,6 @@ func init() {
 	}
 }
 
-func addPlugin(p JobStep) {
+func addPlugin(p JobStepper) {
 	plugins[p.GetName()] = reflect.ValueOf(p).Type()
 }

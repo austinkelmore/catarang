@@ -37,11 +37,7 @@ func AddJob(name string, repo string) error {
 	}
 
 	git := plugin.Git{Origin: repo}
-	gitjson, err := json.Marshal(git)
-	if err != nil {
-		return errors.Wrapf(err, "couldn't marshal plugin.Git to json")
-	}
-	stepTemplate := template.Step{PluginName: git.GetName(), PluginData: gitjson}
+	stepTemplate := plugin.JobStep{&git}
 	template := template.Job{LocalPath: filepath.Join("jobs/", name)}
 	template.Steps = append(template.Steps, stepTemplate)
 	job, err := job.New(template)

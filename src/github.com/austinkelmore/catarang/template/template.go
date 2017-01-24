@@ -1,15 +1,8 @@
 package template
 
-import (
-	"encoding/json"
-)
+import "github.com/austinkelmore/catarang/plugin"
 
 type Job struct {
-	Steps     []Step
+	Steps     []plugin.JobStep
 	LocalPath string
-}
-
-type Step struct {
-	PluginName string          `json:"plugin_name"`
-	PluginData json.RawMessage `json:"plugin"`
 }

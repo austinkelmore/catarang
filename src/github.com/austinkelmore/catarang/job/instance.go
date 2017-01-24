@@ -81,20 +81,7 @@ func createStepsFromTemplate(t template.Job) ([]InstJobStep, error) {
 	}
 
 	for _, step := range t.Steps {
-		plug, ok := plugin.GetAvailable()[step.PluginName]
-		if !ok {
-			return s, errors.Errorf("couldn't find plugin of type \"%s\" in the available map", step.PluginName)
-		}
-
-		val := reflect.New(plug.Elem())
-		jobstep := val.Interface().(plugin.JobStep)
-
-		err := json.Unmarshal(step.PluginData, jobstep)
-		if err != nil {
-			return s, errors.Wrapf(err, "couldn't Unmarshal \"plugin\" blob for plugin %s", step.PluginName)
-		}
-
-		instStep := InstJobStep{Action: jobstep}
+		instStep := InstJobStep{Action: step}
 		instStep.Log.Name = instStep.Action.GetName()
 		instStep.Log.WorkingDir = path
 		s = append(s, instStep)
@@ -116,7 +103,7 @@ func (i *Instance) Start(doFirstTimeSetup bool) {
 
 	if doFirstTimeSetup {
 		for index := range i.Steps {
-			if scm, ok := i.Steps[index].Action.(plugin.SCM); ok {
+			if scm, ok := i.Steps[index].Action.JobStepper.(plugin.SCM); ok {
 				if err := scm.FirstTimeSetup(&i.Steps[index].Log); err != nil {
 					i.Error = errors.Wrapf(err, "can't run first FirstTimeSetup on scm %v", scm.GetName())
 					i.Status = FAILED
